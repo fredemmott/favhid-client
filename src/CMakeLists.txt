@@ -1,3 +1,8 @@
+add_definitions(
+    -DUNICODE
+    -DNOMINMAX=1
+)
+
 add_executable(
     easytest
     easytest.cpp
