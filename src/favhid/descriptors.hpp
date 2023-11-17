@@ -43,9 +43,144 @@ class UsagePage final : public Entry {
   static UsagePage GenericDesktop() {
     return {0x01};
   }
+
+  static UsagePage SimulationControls() {
+    return {0x02};
+  }
+
+  static UsagePage VRControls() {
+    return {0x03};
+  }
+
+  static UsagePage SportControls() {
+    return {0x04};
+  }
+
+  static UsagePage GameControls() {
+    return {0x05};
+  }
+
+  static UsagePage GenericDeviceControls() {
+    return {0x06};
+  }
+
+  static UsagePage KeyboardKeypad() {
+    return {0x07};
+  }
+
+  static UsagePage LED() {
+    return {0x08};
+  }
+  
   static UsagePage Button() {
     return {0x09};
   }
+
+  static UsagePage Ordinal() {
+    return {0x0A};
+  }
+
+  static UsagePage TelephonyDevice() {
+    return {0x0B};
+  }
+
+  static UsagePage Consumer() {
+    return {0x0C};
+  }
+
+  static UsagePage Digitizers() {
+    return {0x0D};
+  }
+
+  static UsagePage Haptics() {
+    return {0x0E};
+  }
+
+  static UsagePage PhysicalInputDevice() {
+    return {0x0F};
+  }
+
+  static UsagePage Unicode() {
+    return {0x10};
+  }
+
+  static UsagePage SoC() {
+    return {0x11};
+  }
+
+  static UsagePage EyeAndHeadTrackers() {
+    return {0x12};
+  }
+
+  static UsagePage AuxilliaryDisplay() {
+    return {0x15};
+  }
+
+  static UsagePage Sensors() {
+    return {0x20};
+  }
+
+  static UsagePage MedicalInstrument() {
+    return {0x40};
+  }
+
+  static UsagePage BrailleDisplay() {
+    return {0x41};
+  }
+
+  static UsagePage LightingAndIllumination() {
+    return {0x59};
+  }
+
+  static UsagePage Monitor() {
+    return {0x80};
+  }
+
+  static UsagePage MonitorEnumerated() {
+    return {0x81};
+  }
+
+  static UsagePage VESAVirtualControls() {
+    return {0x82};
+  }
+
+  static UsagePage Power() {
+    return {0x84};
+  }
+
+  static UsagePage BatterySystem() {
+    return {0x85};
+  }
+
+  static UsagePage BarcodeScanner() {
+    return {0x8C};
+  }
+
+  static UsagePage Scales() {
+    return {0x8D};
+  }
+
+  static UsagePage MagneticStripeReader() {
+    return {0x8E};
+  }
+
+  static UsagePage CameraControl() {
+    return {0x90};
+  }
+
+  static UsagePage Arcade() {
+    return {0x91};
+  }
+
+  static UsagePage GamingDevice() {
+    return {0x92};
+  }
+
+/* This class doesn't currently support multi-byte values  
+  static UsagePage FIDOAlliance() {
+    return {0xF1D0};
+  }
+*/
 };
 
 class Usage final : public Entry {
@@ -53,8 +188,76 @@ class Usage final : public Entry {
   Usage(uint8_t value) : Entry(0x09, value) {
   }
 
-  static Usage GamePad() {
+  static Usage Pointer() {
+    return {0x01};
+  }
+
+  static Usage Mouse() {
+    return {0x02};
+  }
+
+  static Usage Joystick() {
+    return {0x04};
+  }
+
+  static Usage Gamepad() {
     return {0x05};
+  }
+
+  static Usage Keyboard() {
+    return {0x06};
+  }
+
+  static Usage Keypad() {
+    return {0x07};
+  }
+
+  static Usage MultiAxisController() {
+    return {0x08};
+  }
+
+  static Usage TabletPCSystemControls() {
+    return {0x08};
+  }
+
+  static Usage WaterCoolingDevice() {
+    return {0x0A};
+  }
+
+  static Usage ComputerChassisDevice() {
+    return {0x0B};
+  }
+
+  static Usage WirelessRadioControls() {
+    return {0x0C};
+  }
+
+  static Usage PortableDeviceControl() {
+    return {0x0D};
+  }
+
+  static Usage SystemMultiAxisController() {
+    return {0x0E};
+  }
+
+  static Usage SpacialController() {
+    return {0x0F};
+  }
+
+  static Usage AssistiveControl() {
+    return {0x10};
+  }
+
+  static Usage DeviceDock() {
+    return {0x11};
+  }
+
+  static Usage DockableDevice() {
+    return {0x12};
+  }
+
+  static Usage CallStateManagementControl() {
+    return {0x13};
   }
 
   static Usage X() {
@@ -63,6 +266,70 @@ class Usage final : public Entry {
 
   static Usage Y() {
     return {0x31};
+  }
+
+  static Usage Z() {
+    return {0x32};
+  }
+
+  static Usage Rx() {
+    return {0x33};
+  }
+  
+  static Usage Ry() {
+    return {0x34};
+  }
+
+  static Usage Rz() {
+    return {0x35};
+  }
+
+  static Usage Slider() {
+    return {0x36};
+  }
+
+  static Usage Dial() {
+    return {0x37};
+  }
+
+  static Usage Wheel() {
+    return {0x38};
+  }
+
+  static Usage HatSwitch() {
+    return {0x39};
+  }
+
+  static Usage CountedBuffer() {
+    return {0x3A};
+  }
+
+  static Usage ByteCount() {
+    return {0x3B};
+  }
+
+  static Usage MotionWakeup() {
+    return {0x3C};
+  }
+
+  static Usage Start() {
+    return {0x3D};
+  }
+
+  static Usage Select() {
+    return {0x3E};
+  }
+
+  static Usage Vx() {
+    return {0x40};
+  }
+
+  static Usage Vy() {
+    return {0x41};
+  }
+
+  static Usage Vz() {
+    return {0x42};
   }
 };
 

@@ -32,7 +32,7 @@ static void WriteDescriptor(const THandle& handle, uint8_t reportID) {
 
   Descriptor desc {
     UsagePage::GenericDesktop(),
-    Usage::GamePad(),
+    Usage::Gamepad(),
     Collection::Application(Collection::Physical(
       ReportID(reportID),
       UsagePage::GenericDesktop(),
