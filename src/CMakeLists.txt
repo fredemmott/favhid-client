@@ -5,6 +5,7 @@ add_definitions(
 add_library(
     favhid
     Arduino.cpp
+    OpaqueiD.cpp
 )
 target_compile_definitions(
     favhid
@@ -28,3 +29,6 @@ target_link_libraries(easytest PRIVATE favhid)
 
 add_executable(randomize-serial-number randomize-serial-number.cpp)
 target_link_libraries(randomize-serial-number PRIVATE favhid)
+
+add_executable(generate-random-ids generate-random-ids.cpp)
+target_link_libraries(generate-random-ids PRIVATE favhid)

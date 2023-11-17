@@ -9,13 +9,6 @@
 
 using namespace FAVHID;
 
-static std::string FormatSerial(const std::array<char, SERIAL_SIZE> &serial)
-{
-    static_assert(SERIAL_SIZE == sizeof(winrt::guid));
-    winrt::guid guid(*reinterpret_cast<const GUID *>(serial.data()));
-    return winrt::to_string(winrt::to_hstring(guid));
-}
-
 int main()
 {
     auto maybeArduino = Arduino::Open();
@@ -37,7 +30,7 @@ int main()
         return 2;
     }
 
-    std::cout << std::format("Old serial: {}\nNew serial: {}", FormatSerial(oldSerial), FormatSerial(newSerial))
+    std::cout << std::format("Old serial: {}\nNew serial: {}", oldSerial.HumanReadable(), newSerial.HumanReadable())
               << std::endl;
 
     return 0;

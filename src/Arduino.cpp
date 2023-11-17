@@ -10,7 +10,8 @@ namespace FAVHID {
 constexpr std::string_view MSG_HELLO {"FAVHID" FAVHID_PROTO_VERSION};
 constexpr std::string_view MSG_HELLO_ACK {"ACKVER" FAVHID_PROTO_VERSION};
 
-static void WriteArduino(const winrt::file_handle& handle, const void* data, size_t size) {
+static void
+WriteArduino(const winrt::file_handle& handle, const void* data, size_t size) {
   auto h = handle.get();
   winrt::check_bool(WriteFile(h, data, size, nullptr, nullptr));
   winrt::check_bool(FlushFileBuffers(h));
@@ -50,72 +51,87 @@ static winrt::file_handle OpenArduino(ULONG port) {
   return f;
 }
 
-static winrt::file_handle OpenArduino() {
+winrt::file_handle Arduino::OpenHandle(const std::optional<OpaqueID>& serial) {
   ULONG ports[255];
   ULONG count = 255;
   if (GetCommPorts(ports, 255, &count) != ERROR_SUCCESS) {
     return {};
   }
   for (int i = 0; i < count; ++i) {
-    auto f = OpenArduino(ports[i]);
-    if (f) {
-      return f;
+    try {
+      auto f = OpenArduino(ports[i]);
+
+      if (!f) {
+        continue;
+      }
+      if (!serial) {
+        return f;
+      }
+
+      Arduino a(std::move(f));
+      if (a.GetSerialNumber() == *serial) {
+        return std::move(a.mHandle);
+      }
+    } catch (...) {
+      continue;
     }
   }
   return {};
 }
 
 std::optional<Arduino> Arduino::Open() {
-  auto f = OpenArduino();
+  auto f = OpenHandle();
   if (!f) {
     return {};
   }
-  return Arduino { std::move(f) };
+  return Arduino {std::move(f)};
 }
 
-Arduino::Arduino(THandle&& h) : mHandle(std::move(h)) {}
+std::optional<Arduino> Arduino::Open(const OpaqueID& serial) {
+  auto f = OpenHandle(serial);
+  if (!f) {
+    return {};
+  }
+  return Arduino {std::move(f)};
+}
+
+Arduino::Arduino(THandle&& h) : mHandle(std::move(h)) {
+}
 
 void Arduino::Write(const void* data, size_t size) {
   WriteArduino(mHandle, data, size);
 }
 
 void Arduino::RandomizeSerialNumber() {
-  constexpr auto dataSize = sizeof(UUID);
-  static_assert(dataSize == SERIAL_SIZE);
+  static_assert(sizeof(OpaqueID) == SERIAL_SIZE);
 
-  char buf[dataSize + sizeof(ShortMessageHeader)];
+  char buf[sizeof(ShortMessageHeader) + sizeof(OpaqueID)];
   *reinterpret_cast<ShortMessageHeader*>(buf) = {
     .type = MessageType::SetSerialNumber,
-    .dataLength = dataSize,
+    .dataLength = sizeof(OpaqueID),
   };
-  if (
-    UuidCreate(reinterpret_cast<UUID*>(buf + sizeof(ShortMessageHeader)))
-    != RPC_S_OK) {
-    throw new std::runtime_error("Failed to create a UUID");
-  }
+  reinterpret_cast<OpaqueID*>(buf + sizeof(ShortMessageHeader))->Randomize();
   Write(buf, sizeof(buf));
 
   const auto response = ReadResponse();
-  if (response.type != MessageType::Response_OK) {
+  if (!response.IsOK()) {
     throw new std::runtime_error("Failed to set serial number");
   }
 }
 
-std::array<char, SERIAL_SIZE> Arduino::GetSerialNumber() {
+OpaqueID Arduino::GetSerialNumber() {
   ShortMessageHeader header {MessageType::GetSerialNumber, 0};
   Write(&header, sizeof(header));
 
-  auto response = ReadResponse();
+  const auto response = ReadResponse();
   if (response.type != MessageType::Response_OK) {
     throw std::exception("Failed to get serial number");
   }
-  if (response.data.size() != SERIAL_SIZE) {
+  if (response.data.size() != sizeof(OpaqueID)) {
     throw std::exception("Serial number is the wrong size");
   }
 
-  std::array<char, SERIAL_SIZE> ret;
-  memcpy(ret.data(), response.data.data(), SERIAL_SIZE);
-  return ret;
+  return *reinterpret_cast<const OpaqueID*>(response.data.data());
 }
 
 Response Arduino::ReadResponse() {
@@ -129,8 +145,7 @@ Response Arduino::ReadResponse() {
   }
 
   char buf[header.dataLength];
-  winrt::check_bool(
-    ReadFile(handle, buf, header.dataLength, nullptr, nullptr));
+  winrt::check_bool(ReadFile(handle, buf, header.dataLength, nullptr, nullptr));
 
   return {header.type, std::string {buf, header.dataLength}};
 }
@@ -168,11 +183,8 @@ Response Arduino::PushDescriptor(
   return ReadResponse();
 }
 
-Response Arduino::WriteReport(
-  uint8_t reportID,
-  const void* report,
-  size_t size) {
-
+Response
+Arduino::WriteReport(uint8_t reportID, const void* report, size_t size) {
   const auto dataSize = size + 1;
   const bool isLongMessage = dataSize > 0xff;
   const auto headerSize
@@ -204,4 +216,76 @@ Response Arduino::WriteReport(
   return ReadResponse();
 }
 
+bool Arduino::ResetUSB() {
+  const auto serial = GetSerialNumber();
+
+  ShortMessageHeader header {MessageType::ResetUSB, 0};
+  Write(&header, sizeof(header));
+  mHandle.close();
+
+  Sleep(1000);
+
+  for (int i = 0; i < 25; ++i) {
+    mHandle = OpenHandle(serial);
+    if (mHandle) {
+      break;
+    }
+    Sleep(250);
+  }
+
+  return !!mHandle;
 }
+
+bool Arduino::HardReset() {
+  const auto serial = GetSerialNumber();
+
+  ShortMessageHeader header {MessageType::HardReset, 0};
+  Write(&header, sizeof(header));
+  mHandle.close();
+
+  Sleep(2000);
+
+  for (int i = 0; i < 5; ++i) {
+    mHandle = OpenHandle(serial);
+    if (mHandle) {
+      break;
+    }
+
+    Sleep(1000);
+  }
+
+  return !!mHandle;
+}
+
+OpaqueID Arduino::GetVolatileConfigID() {
+  ShortMessageHeader header {MessageType::GetVolatileConfigID, 0};
+  Write(&header, sizeof(header));
+
+  const auto response = ReadResponse();
+  if (response.type != MessageType::Response_OK) {
+    throw std::exception("Failed to get config ID");
+  }
+
+  if (response.data.size() != sizeof(OpaqueID)) {
+    throw std::exception("Config ID is the wrong size");
+  }
+
+  return *reinterpret_cast<const OpaqueID*>(response.data.data());
+}
+
+void Arduino::SetVolatileConfigID(const OpaqueID& id) {
+  char buf[sizeof(ShortMessageHeader) + sizeof(OpaqueID)];
+  *reinterpret_cast<ShortMessageHeader*>(buf) = {
+    .type = MessageType::SetVolatileConfigID,
+    .dataLength = sizeof(OpaqueID),
+  };
+  memcpy(buf + sizeof(ShortMessageHeader), &id, sizeof(OpaqueID));
+  Write(buf, sizeof(buf));
+
+  const auto response = ReadResponse();
+  if (!response.IsOK()) {
+    throw new std::runtime_error("Failed to set serial number");
+  }
+}
+
+}// namespace FAVHID

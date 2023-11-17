@@ -1,8 +1,8 @@
 // Copyright 2023 Fred Emmott <fred@fredemmott.com>
 // SPDX-License-Identifier: ISC
 
-#include "favhid/descriptors.hpp"
 #include "favhid/Arduino.hpp"
+#include "favhid/descriptors.hpp"
 #include "favhid/protocol.hpp"
 
 #include <Windows.h>
@@ -56,32 +56,58 @@ static void WriteDescriptor(Arduino* arduino, uint8_t reportID) {
     },
   };
 
-  arduino->PushDescriptor(desc.data(), desc.size());
+  const auto response = arduino->PushDescriptor(desc.data(), desc.size());
+  if (!response.IsOK()) {
+    __debugbreak();
+  }
 }
 
 int main() {
   std::cout << "Opening port..." << std::endl;
 
-  {
-    auto maybeArduino = Arduino::Open();
+  // {7561c7b8-7e1a-419b-98df-d24cd684a92e}
+  constexpr OpaqueID MY_ID {
+    0x7561c7b8,
+    0x7e1a,
+    0x419b,
+    {0x98, 0xdf, 0xd2, 0x4c, 0xd6, 0x84, 0xa9, 0x2e},
+  };
 
-    if (!maybeArduino) {
-      std::cout << "Failed to find Arduino." << std::endl;
+  auto device = Arduino::Open();
+
+  if (!device) {
+    std::cout << "Failed to find Arduino." << std::endl;
+    return 1;
+  }
+
+  const auto activeConfig = device->GetVolatileConfigID();
+  if (activeConfig != MY_ID) {
+    if (!activeConfig.IsZero()) {
+      std::cout << "Rebooting Arduino to get a clean config" << std::endl;
+
+      if (!device->HardReset()) {
+        std::cout << "Failed to find Arduino after hard reset" << std::endl;
+        return 1;
+      }
+    }
+
+    std::cout << "Pushing HID descriptor..." << std::endl;
+    WriteDescriptor(&*device, REPORT_ID);
+    device->SetVolatileConfigID(MY_ID);
+
+    if (!device->ResetUSB()) {
+      std::cout << "Failed to find Arduino after descriptor change"
+                << std::endl;
       return 1;
     }
 
-    WriteDescriptor(&*maybeArduino, REPORT_ID);
-  }
-
-  std::cout << "Waiting to re-open" << std::endl;
-  Sleep(500);
-  auto a = Arduino::Open();
-  if (!a) {
-      std::cout << "Failed to re-open Arduino." << std::endl;
+    if (device->GetVolatileConfigID() != MY_ID) {
+      std::cout << "Arduino has different ID after USB reset" << std::endl;
       return 1;
+    }
   }
-  std::cout << "Re-opened, feeding" << std::endl;
 
+  std::cout << "Feeding..." << std::endl;
 
   Report report {.buttons = 1};
   while (true) {
@@ -90,7 +116,7 @@ int main() {
     if (!report.buttons) {
       report.buttons = 1;
     }
-    const auto result = a->WriteReport(REPORT_ID, &report, sizeof(report));
+    const auto result = device->WriteReport(REPORT_ID, &report, sizeof(report));
     if (!result.IsOK()) {
       __debugbreak();
     }
