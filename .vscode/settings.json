@@ -69,6 +69,7 @@
         "xutility": "cpp",
         "cinttypes": "cpp",
         "codecvt": "cpp",
-        "filesystem": "cpp"
+        "filesystem": "cpp",
+        "numbers": "cpp"
     }
 }

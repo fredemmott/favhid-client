@@ -4,6 +4,7 @@
 #include "favhid/FAVJoyState2.hpp"
 
 #include <chrono>
+#include <numbers>
 #include <thread>
 
 int main() {
@@ -16,23 +17,33 @@ int main() {
   uint64_t frameCount = 0;
   while (true) {
     for (int i = 0; i < VIRTUAL_DEVICE_COUNT; ++i) {
+      // Don't change POV and button states *too* quickly
+
+      const auto slowChangeCount = frameCount / 2;
       DIJOYSTATE2 state {};
-      state.rgbButtons[i] = 0xff;
+      state.rgbButtons[i] = (slowChangeCount % 2) ? 0 : 0xff;
       state.rgbButtons
         [FAVHID::FAVJoyState2::MAX_DEVICES
-         + frameCount % (128 - FAVHID::FAVJoyState2::MAX_DEVICES)]
+         + slowChangeCount % (128 - FAVHID::FAVJoyState2::MAX_DEVICES)]
         = 0xff;
 
       for (int pov = 0; pov < 4; ++pov) {
         // 8 directions + center = 9;
-        const auto pos = (frameCount + pov) % 9;
-        state.rgdwPOV[pov] = pos ? ((pos - 1) * 4500) : -1;
+        const auto pos = (slowChangeCount + pov) % 9;
+        state.rgdwPOV[pov] = pos ? ((pos - 1) * 4500) : -1;        
+      }
+
+      for (int axis = 0; axis < 8; ++axis) {
+        constexpr auto accelerate = 8.0f;
+        auto* value = axis + &state.lX;
+        const auto pi = std::numbers::pi_v<float>;
+        *value = std::numeric_limits<int16_t>::max() * sin((accelerate * frameCount * pi / 180.0f) + (std::numbers::pi * axis / 2.0f));
       }
 
       favhid->WriteReport(state, i);
     }
     frameCount++;
-    std::this_thread::sleep_for(std::chrono::milliseconds(250));
+    std::this_thread::sleep_for(std::chrono::milliseconds(100));
   }
 
   return 0;
