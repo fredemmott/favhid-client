@@ -123,8 +123,8 @@ int main() {
     if (!result.IsOK()) {
       __debugbreak();
     }
-    
-    std::cout << "Submitting report took" << (end - start) << std::endl;
+
+    std::cout << "Submitting report took " << (end - start) << std::endl;
   }
 
   return 0;
