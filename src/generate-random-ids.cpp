@@ -13,7 +13,7 @@ int main() {
     const auto id = OpaqueID::Random();
     std::cout << "// " << id.HumanReadable() << std::endl;
     std::cout << std::format(
-      "constexpr UniqueID MY_ID {{\n"
+      "constexpr OpaqueID MY_ID {{\n"
       "  0x{:08x},\n"
       "  0x{:04x},\n"
       "  0x{:04x},\n"

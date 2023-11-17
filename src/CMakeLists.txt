@@ -2,33 +2,16 @@ add_definitions(
     -DUNICODE
 )
 
-add_library(
-    favhid
-    Arduino.cpp
-    OpaqueiD.cpp
-)
-target_compile_definitions(
-    favhid
-    PUBLIC
-    -DNOMINMAX=1
-    -DFAVHID_CLIENT=1
-)
-target_link_libraries(
-    favhid
-    PRIVATE
-    OneCore # OpenCommPort
-)
-target_include_directories(
-    favhid
-    PUBLIC
-    "${CMAKE_CURRENT_SOURCE_DIR}/include"
-)
-
-add_executable(rawtest rawtest.cpp)
-target_link_libraries(rawtest PRIVATE favhid)
+add_subdirectory(lib)
 
 add_executable(randomize-serial-number randomize-serial-number.cpp)
 target_link_libraries(randomize-serial-number PRIVATE favhid)
 
 add_executable(generate-random-ids generate-random-ids.cpp)
 target_link_libraries(generate-random-ids PRIVATE favhid)
+
+add_executable(test-favjoystate2 test-favjoystate2.cpp)
+target_link_libraries(test-favjoystate2 PRIVATE favhid)
+
+add_executable(test-raw test-raw.cpp)
+target_link_libraries(test-raw PRIVATE favhid)

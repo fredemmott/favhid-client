@@ -1,0 +1,22 @@
+add_library(
+    favhid
+    Arduino.cpp
+    FAVJoyState2.cpp
+    OpaqueID.cpp
+)
+target_compile_definitions(
+    favhid
+    PUBLIC
+    -DNOMINMAX=1
+    -DFAVHID_CLIENT=1
+)
+target_link_libraries(
+    favhid
+    PRIVATE
+    OneCore # OpenCommPort
+)
+target_include_directories(
+    favhid
+    PUBLIC
+    "${CMAKE_CURRENT_SOURCE_DIR}/../include"
+)

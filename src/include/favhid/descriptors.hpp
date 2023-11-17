@@ -228,7 +228,7 @@ class ReportID final : public Entry<2> {
 
 class ReportSize final : public Entry<2> {
  public:
-  constexpr ReportSize(uint8_t id) : Entry<2>(0x75, id) {
+  constexpr ReportSize(uint8_t value) : Entry<2>(0x75, value) {
   }
 };
 
@@ -245,7 +245,25 @@ class IntegerEntry : public Entry<sizeof(V) + 1> {
 
  protected:
   constexpr IntegerEntry(V value) : Base({}) {
-    Base::mSerialized[0] = Tag;
+    // Strip size
+    auto id = Tag & ~0x03;
+    constexpr auto size = sizeof(V);
+    static_assert(size == 0 || size == 1 || size == 2 || size == 4);
+    switch (size) {
+      case 0:
+        break;
+      case 1:
+        id = id | 1;
+        break;
+      case 2:
+        id = id | 2;
+        break;
+      case 4:
+        id = id | 4;
+        break;
+    }
+
+    Base::mSerialized[0] = id;
     for (int i = 1; i <= sizeof(value); ++i) {
       Base::mSerialized[i] = static_cast<uint8_t>(value >> ((i - 1) * 8));
     }

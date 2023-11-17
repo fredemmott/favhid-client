@@ -181,8 +181,8 @@ Response Arduino::PushDescriptor(
   memcpy(it, descriptor, descriptorSize);
   it += descriptorSize;
 
+  // If you need to re-enable this, you have my sympathy.
   if constexpr (false) {
-    // If you need to re-enable this, you have my sympathy.
     for (int i = 0; i < descriptorSize; ++i) {
       std::cout << std::format(
         "{:#04x}", static_cast<const uint8_t*>(descriptor)[i])
