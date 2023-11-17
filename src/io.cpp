@@ -10,6 +10,12 @@ namespace FAVHID {
 constexpr std::string_view MSG_HELLO {"FAVHID" FAVHID_PROTO_VERSION};
 constexpr std::string_view MSG_HELLO_ACK {"ACKVER" FAVHID_PROTO_VERSION};
 
+static void WriteArduino(const winrt::file_handle& handle, const void* data, size_t size) {
+  auto h = handle.get();
+  winrt::check_bool(WriteFile(h, data, size, nullptr, nullptr));
+  winrt::check_bool(FlushFileBuffers(h));
+}
+
 static winrt::file_handle OpenArduino(ULONG port) {
   winrt::file_handle f {
     OpenCommPort(port, GENERIC_READ | GENERIC_WRITE, /* flags = */ 0)};
@@ -25,7 +31,7 @@ static winrt::file_handle OpenArduino(ULONG port) {
   dcb.fRtsControl = RTS_CONTROL_DISABLE;
   winrt::check_bool(SetCommConfig(f.get(), &config, sizeof(config)));
 
-  Write(f, MSG_HELLO.data(), MSG_HELLO.size());
+  WriteArduino(f, MSG_HELLO.data(), MSG_HELLO.size());
 
   char buf[MSG_HELLO_ACK.size()];
   DWORD bytesRead {};
@@ -44,7 +50,7 @@ static winrt::file_handle OpenArduino(ULONG port) {
   return f;
 }
 
-winrt::file_handle OpenArduino() {
+static winrt::file_handle OpenArduino() {
   ULONG ports[255];
   ULONG count = 255;
   if (GetCommPorts(ports, 255, &count) != ERROR_SUCCESS) {
@@ -59,12 +65,21 @@ winrt::file_handle OpenArduino() {
   return {};
 }
 
-void Write(const THandle& handle, const void* data, size_t size) {
-  winrt::check_bool(WriteFile(handle.get(), data, size, nullptr, nullptr));
-  winrt::check_bool(FlushFileBuffers(handle.get()));
+std::optional<Arduino> Arduino::Open() {
+  auto f = OpenArduino();
+  if (!f) {
+    return {};
+  }
+  return Arduino { std::move(f) };
 }
 
-void RandomizeSerialNumber(const THandle& handle) {
+Arduino::Arduino(THandle&& h) : mHandle(std::move(h)) {}
+
+void Arduino::Write(const void* data, size_t size) {
+  WriteArduino(mHandle, data, size);
+}
+
+void Arduino::RandomizeSerialNumber() {
   constexpr auto dataSize = sizeof(UUID);
   static_assert(dataSize == SERIAL_SIZE);
 
@@ -78,19 +93,19 @@ void RandomizeSerialNumber(const THandle& handle) {
     != RPC_S_OK) {
     throw new std::runtime_error("Failed to create a UUID");
   }
-  Write(handle, buf, sizeof(buf));
+  Write(buf, sizeof(buf));
 
-  const auto response = ReadResponse(handle);
+  const auto response = ReadResponse();
   if (response.type != MessageType::Response_OK) {
     throw new std::runtime_error("Failed to set serial number");
   }
 }
 
-std::array<char, SERIAL_SIZE> GetSerialNumber(const THandle& handle) {
+std::array<char, SERIAL_SIZE> Arduino::GetSerialNumber() {
   ShortMessageHeader header {MessageType::GetSerialNumber, 0};
-  Write(handle, &header, sizeof(header));
+  Write(&header, sizeof(header));
 
-  auto response = ReadResponse(handle);
+  auto response = ReadResponse();
   if (response.type != MessageType::Response_OK) {
     throw std::exception("Failed to get serial number");
   }
@@ -103,10 +118,11 @@ std::array<char, SERIAL_SIZE> GetSerialNumber(const THandle& handle) {
   return ret;
 }
 
-Response ReadResponse(const THandle& handle) {
+Response Arduino::ReadResponse() {
+  auto handle = mHandle.get();
   ShortMessageHeader header;
   winrt::check_bool(
-    ReadFile(handle.get(), &header, sizeof(header), nullptr, nullptr));
+    ReadFile(handle, &header, sizeof(header), nullptr, nullptr));
 
   if (header.dataLength == 0) {
     return {header.type};
@@ -114,13 +130,12 @@ Response ReadResponse(const THandle& handle) {
 
   char buf[header.dataLength];
   winrt::check_bool(
-    ReadFile(handle.get(), buf, header.dataLength, nullptr, nullptr));
+    ReadFile(handle, buf, header.dataLength, nullptr, nullptr));
 
   return {header.type, std::string {buf, header.dataLength}};
 }
 
-Response PushDescriptor(
-  const THandle& handle,
+Response Arduino::PushDescriptor(
   const void* descriptor,
   size_t descriptorSize) {
   const auto dataSize = descriptorSize;
@@ -148,13 +163,12 @@ Response PushDescriptor(
   memcpy(it, descriptor, descriptorSize);
   it += descriptorSize;
 
-  Write(handle, buf, messageSize);
+  Write(buf, messageSize);
 
-  return ReadResponse(handle);
+  return ReadResponse();
 }
 
-Response WriteReport(
-  const THandle& handle,
+Response Arduino::WriteReport(
   uint8_t reportID,
   const void* report,
   size_t size) {
@@ -186,8 +200,8 @@ Response WriteReport(
 
   memcpy(it, report, size);
 
-  Write(handle, buf, messageSize);
-  return ReadResponse(handle);
+  Write(buf, messageSize);
+  return ReadResponse();
 }
 
 }

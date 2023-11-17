@@ -18,16 +18,18 @@ static std::string FormatSerial(const std::array<char, SERIAL_SIZE> &serial)
 
 int main()
 {
-    auto f = OpenArduino();
-    if (!f)
+    auto maybeArduino = Arduino::Open();
+    if (!maybeArduino)
     {
         std::cout << "Failed to find a compatible arduino :'(" << std::endl;
         return 1;
     }
+    
+    auto& a = *maybeArduino;
 
-    const auto oldSerial = GetSerialNumber(f);
-    RandomizeSerialNumber(f);
-    const auto newSerial = GetSerialNumber(f);
+    const auto oldSerial = a.GetSerialNumber();
+    a.RandomizeSerialNumber();
+    const auto newSerial = a.GetSerialNumber();
 
     if (oldSerial == newSerial)
     {

@@ -10,17 +10,9 @@
 #include <winrt/base.h>
 
 #include <array>
+#include <optional>
 
 namespace FAVHID {
-
-using THandle = winrt::file_handle;
-
-THandle OpenArduino();
-
-void Write(const THandle&, const void* data, size_t size);
-void RandomizeSerialNumber(const THandle&);
-
-std::array<char, SERIAL_SIZE> GetSerialNumber(const THandle&);
 
 struct Response {
   MessageType type;
@@ -31,19 +23,41 @@ struct Response {
   }
 };
 
-Response ReadResponse(const THandle&);
+class Arduino final {
+ public:
+  Arduino() = delete;
 
-// The Arduino will drop the connection after this, close the handle
-// immediately.
-Response PushDescriptor(
-  const THandle& handle,
-  const void* descriptor,
-  size_t descriptorSize);
+  static std::optional<Arduino> Open();
 
-Response WriteReport(
-  const THandle& handle,
-  uint8_t reportID,
-  const void* report,
-  size_t size);
+  // The Arduino will drop the connection after this, close the handle
+  // immediately.
+  Response PushDescriptor(const void* descriptor, size_t descriptorSize);
+  Response WriteReport(uint8_t reportID, const void* report, size_t size);
 
-}
+  /* Retrieves the serial number from EEPROM.
+   *
+   * The serial number is generated via a past call to
+   * `RandomizeSerialNumber()`.
+   */
+  std::array<char, SERIAL_SIZE> GetSerialNumber();
+  // Convenient for windows users
+  static_assert(SERIAL_SIZE == sizeof(GUID));
+  
+  /* Write a random number to EEPROM.
+   *
+   * This should be called extremely rarely, ideally only when setting
+   * up a device for the very first time.
+   */
+  void RandomizeSerialNumber();
+  
+ private:
+  using THandle = winrt::file_handle;
+
+  THandle mHandle;
+
+  Arduino(THandle&&);
+  void Write(const void* data, size_t size);
+  Response ReadResponse();
+};
+
+}// namespace FAVHID

@@ -27,7 +27,7 @@ struct Report {
 };
 #pragma pack(pop)
 
-static void WriteDescriptor(const THandle& handle, uint8_t reportID) {
+static void WriteDescriptor(Arduino* arduino, uint8_t reportID) {
   using namespace FAVHID::Descriptors;
 
   Descriptor desc {
@@ -56,29 +56,32 @@ static void WriteDescriptor(const THandle& handle, uint8_t reportID) {
     },
   };
 
-  PushDescriptor(handle, desc.data(), desc.size());
+  arduino->PushDescriptor(desc.data(), desc.size());
 }
 
 int main() {
   std::cout << "Opening port..." << std::endl;
-  auto f = OpenArduino();
 
-  if (!f) {
-    std::cout << "Failed to find arduino." << std::endl;
-    return 1;
+  {
+    auto maybeArduino = Arduino::Open();
+
+    if (!maybeArduino) {
+      std::cout << "Failed to find Arduino." << std::endl;
+      return 1;
+    }
+
+    WriteDescriptor(&*maybeArduino, REPORT_ID);
   }
 
-  WriteDescriptor(f, REPORT_ID);
-
-  f.close();
   std::cout << "Waiting to re-open" << std::endl;
   Sleep(500);
-  f = OpenArduino();
+  auto a = Arduino::Open();
+  if (!a) {
+      std::cout << "Failed to re-open Arduino." << std::endl;
+      return 1;
+  }
   std::cout << "Re-opened, feeding" << std::endl;
 
-  if (!f) {
-    return 1;
-  }
 
   Report report {.buttons = 1};
   while (true) {
@@ -87,7 +90,7 @@ int main() {
     if (!report.buttons) {
       report.buttons = 1;
     }
-    const auto result = WriteReport(f, REPORT_ID, &report, sizeof(report));
+    const auto result = a->WriteReport(REPORT_ID, &report, sizeof(report));
     if (!result.IsOK()) {
       __debugbreak();
     }
