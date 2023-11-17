@@ -14,7 +14,7 @@ namespace {
 struct Report final {
   int16_t x, y, z, rx, ry, rz;
   int16_t slider[2];
-  uint8_t pov[4];
+  uint16_t povs;// 4 POV hats, 4 bits each
   uint8_t buttons[128 / 8];
   // int16_t vx, vy, vz;
   // int16_t rvx, rvy, rvz;
@@ -61,9 +61,9 @@ constexpr auto MakeDescriptor() {
         Usage::HatSwitch,
         LogicalMinimum {0_u8},
         LogicalMaximum {7_u8},
-        ReportSize {8_u8},
+        ReportSize {4_u8},
         ReportCount {4_u8},
-        Input::DataVariableAbsolute,
+        Input::DataVariableAbsoluteNullState,
         UsagePage::Button,
         UsageMinimum {1_u8},
         UsageMaximum {128_u8},
@@ -160,7 +160,8 @@ FAVJoyState2::FAVJoyState2(uint8_t deviceCount, Arduino&& a)
   }
 
   if (mDevice.GetVolatileConfigID() != mConfigID) {
-    throw std::runtime_error("Arduino came back with a different volatile config ID");
+    throw std::runtime_error(
+      "Arduino came back with a different volatile config ID");
   }
 }
 
@@ -180,9 +181,19 @@ void FAVJoyState2::WriteReport(const DIJOYSTATE2& di, uint8_t deviceIndex) {
       static_cast<int16_t>(di.rglSlider[0]),
       static_cast<int16_t>(di.rglSlider[1]),
     },
-    .pov = {}, // TODO,
-    .buttons = {},
   };
+
+  // TODO: POVs
+  for (off_t i = 0; i < 4; ++i) {
+    const auto diValue = di.rgdwPOV[i];
+    const auto centered = (LOWORD(diValue) == 0xFFFF);
+    const uint8_t value = centered ? 0b1111 : diValue / 4500;
+    const auto bitOffset = 4 * (i % 2);
+    const auto byteOffset = ((4 * i) - bitOffset) / 8;
+
+    auto& byte = reinterpret_cast<uint8_t*>(&report.povs)[byteOffset];
+    byte |= (value << bitOffset);
+  }
 
   constexpr uint8_t BUTTON_ON_BIT = (1 << 7);
   for (off_t i = 0; i < 128; ++i) {
@@ -204,15 +215,17 @@ std::optional<FAVJoyState2> FAVJoyState2::Open(uint8_t deviceCount) {
   if (!a) {
     return {};
   }
-  return FAVJoyState2 { deviceCount, std::move(*a) };
+  return FAVJoyState2 {deviceCount, std::move(*a)};
 }
 
-std::optional<FAVJoyState2> FAVJoyState2::Open(const OpaqueID& serial, uint8_t deviceCount) {
+std::optional<FAVJoyState2> FAVJoyState2::Open(
+  const OpaqueID& serial,
+  uint8_t deviceCount) {
   auto a = Arduino::Open(serial);
   if (!a) {
     return {};
   }
-  return FAVJoyState2 { deviceCount, std::move(*a) };
+  return FAVJoyState2 {deviceCount, std::move(*a)};
 }
 
 }// namespace FAVHID

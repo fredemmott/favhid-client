@@ -325,6 +325,7 @@ constexpr Flag Volatile = 1 << 7;
 };// namespace Flags
 
 constexpr Input DataVariableAbsolute {Flags::Variable};
+constexpr Input DataVariableAbsoluteNullState {Flags::Variable | Flags::NullState};
 constexpr Input Padding {Flags::Constant};
 }// namespace Input
 
