@@ -188,6 +188,8 @@ class Usage final : public Entry {
   Usage(uint8_t value) : Entry(0x09, value) {
   }
 
+  ///// Generic Desktop /////
+
   static Usage Pointer() {
     return {0x01};
   }
@@ -330,6 +332,46 @@ class Usage final : public Entry {
 
   static Usage Vz() {
     return {0x42};
+  }
+  
+  static Usage Vbrx() {
+    return {0x43};
+  }
+
+  static Usage Vbry() {
+    return {0x44};
+  }
+
+  static Usage Vbrz() {
+    return {0x45};
+  }
+
+  static Usage Vno() {
+    return {0x46};
+  }
+
+  static Usage FeatureNotification() {
+    return {0x47};
+  }
+
+  static Usage ResolutionMultiplier() {
+    return {0x48};
+  }
+
+  static Usage Qx() {
+    return {0x49};
+  }
+  
+  static Usage Qy() {
+    return {0x4A};
+  }
+
+  static Usage Qz() {
+    return {0x4B};
+  }
+
+  static Usage Qw() {
+    return {0x4C};
   }
 };
 
