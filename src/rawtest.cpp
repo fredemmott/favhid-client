@@ -12,6 +12,7 @@
 #include <cstdint>
 #include <format>
 #include <iostream>
+#include <chrono>
 
 #include <wbemidl.h>
 
@@ -116,10 +117,14 @@ int main() {
     if (!report.buttons) {
       report.buttons = 1;
     }
+    const auto start = std::chrono::steady_clock::now();
     const auto result = device->WriteReport(REPORT_ID, &report, sizeof(report));
+    const auto end = std::chrono::steady_clock::now();
     if (!result.IsOK()) {
       __debugbreak();
     }
+    
+    std::cout << "Submitting report took" << (end - start) << std::endl;
   }
 
   return 0;
