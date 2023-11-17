@@ -1,6 +1,7 @@
 add_definitions(
     -DUNICODE
     -DNOMINMAX=1
+    -DFAVHID_CLIENT=1
 )
 
 add_executable(

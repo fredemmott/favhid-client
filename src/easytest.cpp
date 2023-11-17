@@ -52,9 +52,7 @@ static void WriteDescriptor(const THandle& handle, uint8_t reportID) {
       ReportCount(8),
       Input::DataVariableAbsolute()))};
 
-  Report report {};
-  WriteDescriptor(
-    handle, reportID, desc.data(), desc.size(), &report, sizeof(report));
+  PushDescriptor(handle, desc.data(), desc.size());
 }
 
 int main() {

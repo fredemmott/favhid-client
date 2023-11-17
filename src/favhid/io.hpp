@@ -35,13 +35,10 @@ Response ReadResponse(const THandle&);
 
 // The Arduino will drop the connection after this, close the handle
 // immediately.
-Response WriteDescriptor(
+Response PushDescriptor(
   const THandle& handle,
-  uint8_t reportID,
   const void* descriptor,
-  size_t descriptorSize,
-  const void* initialReport,
-  size_t initialReportSize);
+  size_t descriptorSize);
 
 Response WriteReport(
   const THandle& handle,

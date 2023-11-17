@@ -119,15 +119,11 @@ Response ReadResponse(const THandle& handle) {
   return {header.type, std::string {buf, header.dataLength}};
 }
 
-Response WriteDescriptor(
+Response PushDescriptor(
   const THandle& handle,
-  uint8_t reportID,
   const void* descriptor,
-  size_t descriptorSize,
-  const void* initialReport,
-  size_t reportSize) {
-  const auto dataSize = static_cast<uint16_t>(
-    sizeof(PlugDataHeader) + descriptorSize + reportSize);
+  size_t descriptorSize) {
+  const auto dataSize = descriptorSize;
   const bool isLongMessage = dataSize > 0xff;
   const auto headerSize
     = isLongMessage ? sizeof(LongMessageHeader) : sizeof(ShortMessageHeader);
@@ -137,28 +133,20 @@ Response WriteDescriptor(
   auto it = buf;
   if (isLongMessage) {
     *reinterpret_cast<LongMessageHeader*>(it) = {
-      .type = MessageType::Plug,
-      .dataLength = dataSize,
+      .type = MessageType::PushDescriptor,
+      .dataLength = static_cast<uint16_t>(dataSize),
     };
     it += sizeof(LongMessageHeader);
   } else {
     *reinterpret_cast<ShortMessageHeader*>(it) = {
-      .type = MessageType::Plug,
+      .type = MessageType::PushDescriptor,
       .dataLength = static_cast<uint8_t>(dataSize),
     };
     it += sizeof(ShortMessageHeader);
   }
 
-  *reinterpret_cast<PlugDataHeader*>(it) = {
-    .id = reportID,
-    .descriptorLength = static_cast<uint16_t>(descriptorSize),
-    .reportLength = static_cast<uint16_t>(reportSize),
-  };
-  it += sizeof(PlugDataHeader);
-
   memcpy(it, descriptor, descriptorSize);
   it += descriptorSize;
-  memcpy(it, initialReport, reportSize);
 
   Write(handle, buf, messageSize);
 
