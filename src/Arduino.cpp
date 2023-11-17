@@ -5,6 +5,8 @@
 
 #include "favhid/protocol.hpp"
 
+#include <iostream>
+
 namespace FAVHID {
 
 constexpr std::string_view MSG_HELLO {"FAVHID" FAVHID_PROTO_VERSION};
@@ -144,10 +146,11 @@ Response Arduino::ReadResponse() {
     return {header.type};
   }
 
-  char buf[header.dataLength];
-  winrt::check_bool(ReadFile(handle, buf, header.dataLength, nullptr, nullptr));
+  std::string buf(header.dataLength, '\0');
+  winrt::check_bool(ReadFile(
+    handle, buf.data(), static_cast<DWORD>(buf.size()), nullptr, nullptr));
 
-  return {header.type, std::string {buf, header.dataLength}};
+  return {header.type, std::move(buf)};
 }
 
 Response Arduino::PushDescriptor(
@@ -159,8 +162,8 @@ Response Arduino::PushDescriptor(
     = isLongMessage ? sizeof(LongMessageHeader) : sizeof(ShortMessageHeader);
   const auto messageSize = headerSize + dataSize;
 
-  uint8_t buf[messageSize];
-  auto it = buf;
+  std::string buf(messageSize, '\0');
+  auto it = buf.data();
   if (isLongMessage) {
     *reinterpret_cast<LongMessageHeader*>(it) = {
       .type = MessageType::PushDescriptor,
@@ -178,7 +181,16 @@ Response Arduino::PushDescriptor(
   memcpy(it, descriptor, descriptorSize);
   it += descriptorSize;
 
-  Write(buf, messageSize);
+  if constexpr (false) {
+    // If you need to re-enable this, you have my sympathy.
+    for (int i = 0; i < descriptorSize; ++i) {
+      std::cout << std::format(
+        "{:#04x}", static_cast<const uint8_t*>(descriptor)[i])
+                << std::endl;
+    }
+  }
+
+  Write(buf.data(), buf.size());
 
   return ReadResponse();
 }
@@ -191,8 +203,8 @@ Arduino::WriteReport(uint8_t reportID, const void* report, size_t size) {
     = isLongMessage ? sizeof(LongMessageHeader) : sizeof(ShortMessageHeader);
   const auto messageSize = headerSize + dataSize;
 
-  uint8_t buf[messageSize];
-  auto it = buf;
+  std::string buf(messageSize, '\0');
+  auto it = buf.data();
   if (isLongMessage) {
     *reinterpret_cast<LongMessageHeader*>(it) = {
       .type = MessageType::Report,
@@ -212,7 +224,7 @@ Arduino::WriteReport(uint8_t reportID, const void* report, size_t size) {
 
   memcpy(it, report, size);
 
-  Write(buf, messageSize);
+  Write(buf.data(), buf.size());
   return ReadResponse();
 }
 

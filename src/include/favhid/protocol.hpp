@@ -14,6 +14,7 @@ namespace FAVHID {
 
 #define FAVHID_PROTO_VERSION "2023111702"
 constexpr uint8_t SERIAL_SIZE = 16;
+constexpr uint8_t FIRST_AVAILABLE_REPORT_ID = 3;
 
 /** Can be used for serial numbers or config IDs.
  *

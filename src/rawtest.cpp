@@ -9,16 +9,16 @@
 
 #include <winrt/base.h>
 
+#include <chrono>
 #include <cstdint>
 #include <format>
 #include <iostream>
-#include <chrono>
 
 #include <wbemidl.h>
 
 using namespace FAVHID;
 
-constexpr uint8_t REPORT_ID = 0x03;
+constexpr auto REPORT_ID = FIRST_AVAILABLE_REPORT_ID;
 
 #pragma pack(push, 1)
 struct Report {
@@ -28,36 +28,37 @@ struct Report {
 };
 #pragma pack(pop)
 
-static void WriteDescriptor(Arduino* arduino, uint8_t reportID) {
+static void PushDescriptor(Arduino& arduino) {
   using namespace FAVHID::Descriptors;
+  using namespace FAVHID::Descriptors::IntegerSuffixes;
 
-  Descriptor desc {
-    UsagePage::GenericDesktop(),
-    Usage::Gamepad(),
+  constexpr Descriptor desc {
+    UsagePage::GenericDesktop,
+    Usage::Gamepad,
     Collection::Application {
       Collection::Physical {
-        ReportID(reportID),
-        UsagePage::GenericDesktop(),
-        Usage::X(),
-        Usage::Y(),
-        LogicalMinimum::ForType<int8_t>(),
-        LogicalMaximum::ForType<int8_t>(),
-        ReportSize(8),
-        ReportCount(2),
-        Input::DataVariableAbsolute(),
-        UsagePage::Button(),
-        UsageMinimum(1),
-        UsageMaximum(8),
-        LogicalMinimum(0),
-        LogicalMaximum(1),
-        ReportSize(1),
-        ReportCount(8),
-        Input::DataVariableAbsolute(),
+        ReportID {REPORT_ID},
+        UsagePage::GenericDesktop,
+        Usage::X,
+        Usage::Y,
+        LogicalMinimum<int8_t> {},
+        LogicalMaximum<int8_t> {},
+        ReportSize {8_u8},
+        ReportCount {2_u8},
+        Input::DataVariableAbsolute,
+        UsagePage::Button,
+        UsageMinimum {1_u8},
+        UsageMaximum {8_u8},
+        LogicalMinimum {0_u8},
+        LogicalMaximum {1_u8},
+        ReportSize {1_u8},
+        ReportCount {8_u8},
+        Input::DataVariableAbsolute,
       },
     },
   };
 
-  const auto response = arduino->PushDescriptor(desc.data(), desc.size());
+  const auto response = arduino.PushDescriptor(desc.data(), desc.size());
   if (!response.IsOK()) {
     __debugbreak();
   }
@@ -93,7 +94,7 @@ int main() {
     }
 
     std::cout << "Pushing HID descriptor..." << std::endl;
-    WriteDescriptor(&*device, REPORT_ID);
+    PushDescriptor(*device);
     device->SetVolatileConfigID(MY_ID);
 
     if (!device->ResetUSB()) {

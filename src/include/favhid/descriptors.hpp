@@ -8,522 +8,326 @@
 #include <concepts>
 #include <limits>
 #include <string_view>
+#include <type_traits>
 
 namespace FAVHID::Descriptors {
 
+namespace IntegerSuffixes {
+
+constexpr auto operator"" _u8(unsigned long long v) {
+  return static_cast<uint8_t>(v);
+}
+
+constexpr auto operator"" _i8(unsigned long long v) {
+  return static_cast<int8_t>(v);
+}
+
+constexpr auto operator"" _u16(unsigned long long v) {
+  return static_cast<uint16_t>(v);
+}
+
+constexpr auto operator"" _i16(unsigned long long v) {
+  return static_cast<int16_t>(v);
+}
+
+}// namespace IntegerSuffixes
+
+template <size_t N>
 class Entry {
  public:
-  std::basic_string_view<uint8_t> GetBytes() const {
+  static constexpr size_t Size = N;
+
+  constexpr const uint8_t* data() const {
     return mSerialized;
+  }
+
+  constexpr size_t size() const {
+    return N;
   }
 
  protected:
   Entry() = delete;
-  Entry(std::basic_string_view<uint8_t> value) {
-    mSerialized = std::basic_string<uint8_t> {value};
+  constexpr Entry(const uint8_t (&value)[N]) {
+    std::copy_n(value, N, mSerialized);
   }
 
-  Entry(uint8_t value) : Entry({&value, 1}) {
-  }
+  template <class... Bytes>
+  constexpr Entry(Bytes... bytes)
+    : Entry<sizeof...(Bytes)>({static_cast<uint8_t>(bytes)...}) {};
 
-  Entry(uint16_t value) : Entry({reinterpret_cast<uint8_t*>(&value), 2}) {
-  }
-
-  Entry(uint8_t a, uint8_t b) : Entry(static_cast<uint16_t>((b << 8) | a)) {
-  }
-
-  std::basic_string<uint8_t> mSerialized;
+  uint8_t mSerialized[N];
 };
 
-class UsagePage final : public Entry {
+namespace UsagePage {
+
+template <class... Vs>
+class UsagePage final : public Entry<sizeof...(Vs) + 1> {
  public:
-  UsagePage(uint8_t value) : Entry(0x05, value) {
-  }
-
-  static UsagePage GenericDesktop() {
-    return {0x01};
-  }
-
-  static UsagePage SimulationControls() {
-    return {0x02};
-  }
-
-  static UsagePage VRControls() {
-    return {0x03};
-  }
-
-  static UsagePage SportControls() {
-    return {0x04};
-  }
-
-  static UsagePage GameControls() {
-    return {0x05};
-  }
-
-  static UsagePage GenericDeviceControls() {
-    return {0x06};
-  }
-
-  static UsagePage KeyboardKeypad() {
-    return {0x07};
-  }
-
-  static UsagePage LED() {
-    return {0x08};
-  }
-
-  static UsagePage Button() {
-    return {0x09};
-  }
-
-  static UsagePage Ordinal() {
-    return {0x0A};
-  }
-
-  static UsagePage TelephonyDevice() {
-    return {0x0B};
-  }
-
-  static UsagePage Consumer() {
-    return {0x0C};
-  }
-
-  static UsagePage Digitizers() {
-    return {0x0D};
-  }
-
-  static UsagePage Haptics() {
-    return {0x0E};
-  }
-
-  static UsagePage PhysicalInputDevice() {
-    return {0x0F};
-  }
-
-  static UsagePage Unicode() {
-    return {0x10};
-  }
-
-  static UsagePage SoC() {
-    return {0x11};
-  }
-
-  static UsagePage EyeAndHeadTrackers() {
-    return {0x12};
-  }
-
-  static UsagePage AuxilliaryDisplay() {
-    return {0x15};
-  }
-
-  static UsagePage Sensors() {
-    return {0x20};
-  }
-
-  static UsagePage MedicalInstrument() {
-    return {0x40};
-  }
-
-  static UsagePage BrailleDisplay() {
-    return {0x41};
-  }
-
-  static UsagePage LightingAndIllumination() {
-    return {0x59};
-  }
-
-  static UsagePage Monitor() {
-    return {0x80};
-  }
-
-  static UsagePage MonitorEnumerated() {
-    return {0x81};
-  }
-
-  static UsagePage VESAVirtualControls() {
-    return {0x82};
-  }
-
-  static UsagePage Power() {
-    return {0x84};
-  }
-
-  static UsagePage BatterySystem() {
-    return {0x85};
-  }
-
-  static UsagePage BarcodeScanner() {
-    return {0x8C};
-  }
-
-  static UsagePage Scales() {
-    return {0x8D};
-  }
-
-  static UsagePage MagneticStripeReader() {
-    return {0x8E};
-  }
-
-  static UsagePage CameraControl() {
-    return {0x90};
-  }
-
-  static UsagePage Arcade() {
-    return {0x91};
-  }
-
-  static UsagePage GamingDevice() {
-    return {0x92};
-  }
-
-  /* This class doesn't currently support multi-byte values
-    static UsagePage FIDOAlliance() {
-      return {0xF1D0};
-    }
-  */
-};
-
-class Usage final : public Entry {
- public:
-  Usage(uint8_t value) : Entry(0x09, value) {
-  }
-
-  ///// Generic Desktop /////
-
-  static Usage Pointer() {
-    return {0x01};
-  }
-
-  static Usage Mouse() {
-    return {0x02};
-  }
-
-  static Usage Joystick() {
-    return {0x04};
-  }
-
-  static Usage Gamepad() {
-    return {0x05};
-  }
-
-  static Usage Keyboard() {
-    return {0x06};
-  }
-
-  static Usage Keypad() {
-    return {0x07};
-  }
-
-  static Usage MultiAxisController() {
-    return {0x08};
-  }
-
-  static Usage TabletPCSystemControls() {
-    return {0x08};
-  }
-
-  static Usage WaterCoolingDevice() {
-    return {0x0A};
-  }
-
-  static Usage ComputerChassisDevice() {
-    return {0x0B};
-  }
-
-  static Usage WirelessRadioControls() {
-    return {0x0C};
-  }
-
-  static Usage PortableDeviceControl() {
-    return {0x0D};
-  }
-
-  static Usage SystemMultiAxisController() {
-    return {0x0E};
-  }
-
-  static Usage SpacialController() {
-    return {0x0F};
-  }
-
-  static Usage AssistiveControl() {
-    return {0x10};
-  }
-
-  static Usage DeviceDock() {
-    return {0x11};
-  }
-
-  static Usage DockableDevice() {
-    return {0x12};
-  }
-
-  static Usage CallStateManagementControl() {
-    return {0x13};
-  }
-
-  static Usage X() {
-    return {0x30};
-  }
-
-  static Usage Y() {
-    return {0x31};
-  }
-
-  static Usage Z() {
-    return {0x32};
-  }
-
-  static Usage Rx() {
-    return {0x33};
-  }
-
-  static Usage Ry() {
-    return {0x34};
-  }
-
-  static Usage Rz() {
-    return {0x35};
-  }
-
-  static Usage Slider() {
-    return {0x36};
-  }
-
-  static Usage Dial() {
-    return {0x37};
-  }
-
-  static Usage Wheel() {
-    return {0x38};
-  }
-
-  static Usage HatSwitch() {
-    return {0x39};
-  }
-
-  static Usage CountedBuffer() {
-    return {0x3A};
-  }
-
-  static Usage ByteCount() {
-    return {0x3B};
-  }
-
-  static Usage MotionWakeup() {
-    return {0x3C};
-  }
-
-  static Usage Start() {
-    return {0x3D};
-  }
-
-  static Usage Select() {
-    return {0x3E};
-  }
-
-  static Usage Vx() {
-    return {0x40};
-  }
-
-  static Usage Vy() {
-    return {0x41};
-  }
-
-  static Usage Vz() {
-    return {0x42};
-  }
-  
-  static Usage Vbrx() {
-    return {0x43};
-  }
-
-  static Usage Vbry() {
-    return {0x44};
-  }
-
-  static Usage Vbrz() {
-    return {0x45};
-  }
-
-  static Usage Vno() {
-    return {0x46};
-  }
-
-  static Usage FeatureNotification() {
-    return {0x47};
-  }
-
-  static Usage ResolutionMultiplier() {
-    return {0x48};
-  }
-
-  static Usage Qx() {
-    return {0x49};
-  }
-  
-  static Usage Qy() {
-    return {0x4A};
-  }
-
-  static Usage Qz() {
-    return {0x4B};
-  }
-
-  static Usage Qw() {
-    return {0x4C};
+  constexpr UsagePage(Vs... vs) : Entry<sizeof...(vs) + 1>(0x05, vs...) {
   }
 };
 
-class UsageMinimum final : public Entry {
+constexpr UsagePage GenericDesktop {0x01};
+constexpr UsagePage SimulationControls {0x02};
+constexpr UsagePage VRControls {0x03};
+constexpr UsagePage SportControls {0x04};
+constexpr UsagePage GameControls {0x05};
+constexpr UsagePage GenericDeviceControls {0x06};
+constexpr UsagePage KeyboardKeypad {0x07};
+constexpr UsagePage LED {0x08};
+constexpr UsagePage Button {0x09};
+constexpr UsagePage Ordinal {0x0A};
+constexpr UsagePage TelephonyDevice {0x0B};
+constexpr UsagePage Consumer {0x0C};
+constexpr UsagePage Digitizers {0x0D};
+constexpr UsagePage Haptics {0x0E};
+constexpr UsagePage PhysicalInputDevice {0x0F};
+constexpr UsagePage Unicode {0x10};
+constexpr UsagePage SoC {0x11};
+constexpr UsagePage EyeAndHeadTrackers {0x12};
+constexpr UsagePage AuxilliaryDisplay {0x15};
+constexpr UsagePage Sensors {0x20};
+constexpr UsagePage MedicalInstrument {0x40};
+constexpr UsagePage BrailleDisplay {0x41};
+constexpr UsagePage LightingAndIllumination {0x59};
+constexpr UsagePage Monitor {0x80};
+constexpr UsagePage MonitorEnumerated {0x81};
+constexpr UsagePage VESAVirtualControls {0x82};
+constexpr UsagePage Power {0x84};
+constexpr UsagePage BatterySystem {0x85};
+constexpr UsagePage BarcodeScanner {0x8C};
+constexpr UsagePage Scales {0x8D};
+constexpr UsagePage MagneticStripeReader {0x8E};
+constexpr UsagePage CameraControl {0x90};
+constexpr UsagePage Arcade {0x91};
+constexpr UsagePage GamingDevice {0x92};
+
+// This class doesn't currently support multi-byte values
+// static constexpr UsagePage FIDOAlliance {0xF1D0};
+}// namespace UsagePage
+
+namespace Usage {
+
+template <class... Vs>
+class Usage final : public Entry<sizeof...(Vs) + 1> {
  public:
-  UsageMinimum(auto value) : Entry(0x19, value) {
+  constexpr Usage(Vs... vs) : Entry<sizeof...(vs) + 1>(0x09, vs...) {
   }
 };
 
-class UsageMaximum final : public Entry {
+///// Generic Desktop /////
+
+constexpr Usage Pointer {0x01};
+constexpr Usage Mouse {0x02};
+constexpr Usage Joystick {0x04};
+constexpr Usage Gamepad {0x05};
+constexpr Usage Keyboard {0x06};
+constexpr Usage Keypad {0x07};
+constexpr Usage MultiAxisController {0x08};
+constexpr Usage TabletPCSystemControls {0x08};
+constexpr Usage WaterCoolingDevice {0x0A};
+constexpr Usage ComputerChassisDevice {0x0B};
+constexpr Usage WirelessRadioControls {0x0C};
+constexpr Usage PortableDeviceControl {0x0D};
+constexpr Usage SystemMultiAxisController {0x0E};
+constexpr Usage SpacialController {0x0F};
+constexpr Usage AssistiveControl {0x10};
+constexpr Usage DeviceDock {0x11};
+constexpr Usage DockableDevice {0x12};
+constexpr Usage CallStateManagementControl {0x13};
+constexpr Usage X {0x30};
+constexpr Usage Y {0x31};
+constexpr Usage Z {0x32};
+constexpr Usage Rx {0x33};
+constexpr Usage Ry {0x34};
+constexpr Usage Rz {0x35};
+constexpr Usage Slider {0x36};
+constexpr Usage Dial {0x37};
+constexpr Usage Wheel {0x38};
+constexpr Usage HatSwitch {0x39};
+constexpr Usage CountedBuffer {0x3A};
+constexpr Usage ByteCount {0x3B};
+constexpr Usage MotionWakeup {0x3C};
+constexpr Usage Start {0x3D};
+constexpr Usage Select {0x3E};
+constexpr Usage Vx {0x40};
+constexpr Usage Vy {0x41};
+constexpr Usage Vz {0x42};
+constexpr Usage Vbrx {0x43};
+constexpr Usage Vbry {0x44};
+constexpr Usage Vbrz {0x45};
+constexpr Usage Vno {0x46};
+constexpr Usage FeatureNotification {0x47};
+constexpr Usage ResolutionMultiplier {0x48};
+constexpr Usage Qx {0x49};
+constexpr Usage Qy {0x4A};
+constexpr Usage Qz {0x4B};
+constexpr Usage Qw {0x4C};
+
+}// namespace Usage
+
+template <class... Vs>
+class UsageMinimum final : public Entry<sizeof...(Vs) + 1> {
  public:
-  UsageMaximum(auto value) : Entry(0x29, value) {
+  constexpr UsageMinimum(Vs... vs) : Entry<sizeof...(Vs) + 1>(0x19, vs...) {
   }
 };
 
-class Collection : public Entry {
+template <class... Vs>
+class UsageMaximum final : public Entry<sizeof...(Vs) + 1> {
  public:
-  template <std::derived_from<Entry>... Ts>
-  Collection(uint8_t id, const Ts&... ts) : Entry(0xa1, id) {
-    ([&]() { mSerialized += ts.GetBytes(); }(), ...);
-    mSerialized += '\xc0';
-  }
-
-  class Application;
-  class Physical;
-};
-
-class Collection::Physical: public Collection {
- public:
-  template <std::derived_from<Entry>... Ts>
-  Physical(const Ts&... ts) : Collection(0x00, ts...) {
+  constexpr UsageMaximum(Vs... vs) : Entry<sizeof...(Vs) + 1>(0x29, vs...) {
   }
 };
 
-class Collection::Application : public Collection {
+namespace Collection {
+
+template <class... Entries>
+class Collection : public Entry<3 + (... + Entries::Size)> {
+ private:
+  using Base = Entry<3 + (... + Entries::Size)>;
+
  public:
-  template <std::derived_from<Entry>... Ts>
-  Application(const Ts&... ts) : Collection(0x01, ts...) {
+  constexpr Collection(uint8_t id, const Entries&... entries) : Base({}) {
+    Base::mSerialized[0] = 0xa1;
+    Base::mSerialized[1] = id;
+    size_t i = 2;
+    (
+      [&]() {
+        const auto size = entries.size();
+        std::copy_n(entries.data(), size, Base::mSerialized + i);
+        i += size;
+      }(),
+      ...);
+    Base::mSerialized[Base::Size - 1] = '\xc0';
   }
 };
 
-class ReportID final : public Entry {
+template <class... Entries>
+class Physical final : public Collection<Entries...> {
  public:
-  ReportID(uint8_t value) : Entry(0x85, value) {
+  constexpr Physical(const Entries&... entries)
+    : Collection<Entries...>(0x00, entries...) {
   }
 };
 
-// TODO: figure out multi-byte stuff
-class IntValueEntry : public Entry {
+template <class... Entries>
+class Application final : public Collection<Entries...> {
  public:
-  IntValueEntry(uint8_t id, auto value) : Entry(id) {
-    if (value < 0) {
-      mSerialized += std::bit_cast<char>(static_cast<int8_t>(value));
-    } else {
-      mSerialized += static_cast<char>(value);
+  constexpr Application(const Entries&... entries)
+    : Collection<Entries...>(0x01, entries...) {
+  }
+};
+}// namespace Collection
+
+class ReportID final : public Entry<2> {
+ public:
+  constexpr ReportID(uint8_t id) : Entry<2>(0x85, id) {
+  }
+};
+
+class ReportSize final : public Entry<2> {
+ public:
+  constexpr ReportSize(uint8_t id) : Entry<2>(0x75, id) {
+  }
+};
+
+class ReportCount final : public Entry<2> {
+ public:
+  constexpr ReportCount(uint8_t value) : Entry<2>(0x95, value) {
+  }
+};
+
+template <uint8_t Tag, class V>
+class IntegerEntry : public Entry<sizeof(V) + 1> {
+ private:
+  using Base = Entry<sizeof(V) + 1>;
+
+ protected:
+  constexpr IntegerEntry(V value) : Base({}) {
+    Base::mSerialized[0] = Tag;
+    for (int i = 1; i <= sizeof(value); ++i) {
+      Base::mSerialized[i] = static_cast<uint8_t>(value >> ((i - 1) * 8));
     }
   }
 };
 
-class ReportSize final : public IntValueEntry {
+template <class V>
+class LogicalMinimum final : public IntegerEntry<0x15, V> {
  public:
-  ReportSize(auto value) : IntValueEntry(0x75, value) {
+  constexpr LogicalMinimum(V value) : IntegerEntry<0x15, V>(value) {
+  }
+
+  constexpr LogicalMinimum() : LogicalMinimum(std::numeric_limits<V>::min()) {
   }
 };
 
-class ReportCount final : public IntValueEntry {
+template <class V>
+class LogicalMaximum final : public IntegerEntry<0x25, V> {
  public:
-  ReportCount(auto value) : IntValueEntry(0x95, value) {
+  constexpr LogicalMaximum(V value) : IntegerEntry<0x25, V>(value) {
+  }
+  constexpr LogicalMaximum() : LogicalMaximum(std::numeric_limits<V>::max()) {
   }
 };
 
-class LogicalMinimum final : public IntValueEntry {
+namespace Input {
+class Input final : public Entry<2> {
  public:
-  LogicalMinimum(auto value) : IntValueEntry(0x15, value) {
-  }
-
-  template <class T>
-  static LogicalMinimum ForType() {
-    return {std::numeric_limits<T>::min()};
+  constexpr Input(uint8_t flags) : Entry(0x81, flags) {
   }
 };
 
-class LogicalMaximum final : public IntValueEntry {
- public:
-  LogicalMaximum(auto value) : IntValueEntry(0x25, value) {
-  }
+namespace Flags {
+using Flag = uint8_t;
 
-  template <class T>
-  static LogicalMaximum ForType() {
-    return {std::numeric_limits<T>::max()};
-  }
-};
+// constexpr Flag Data = 0;
+constexpr Flag Constant = 1;
 
-// TODO: add support for multibyte flags
-class Input final : public IntValueEntry {
- public:
-  Input(auto flags) : IntValueEntry(0x81, flags) {
-  }
+// constexpr Flag Array = 0;
+constexpr Flag Variable = 1 << 1;
 
-  using Flag = uint8_t;
+// constexpr Flag Absolute = 0;
+constexpr Flag Relative = 1 << 2;
 
-  // static constexpr Flag Data = 0;
-  static constexpr Flag Constant = 1;
+// constexpr Flag NoWrap = 0;
+constexpr Flag Wrap = 1 << 3;
 
-  // static constexpr Flag Array = 0;
-  static constexpr Flag Variable = 1 << 1;
+// constexpr Flag Linear = 0;
+constexpr Flag NonLinear = 1 << 4;
 
-  // static constexpr Flag Absolute = 0;
-  static constexpr Flag Relative = 1 << 2;
+// constexpr Flag PreferredState = 0;
+constexpr Flag NoPreferredState = 1 << 5;
 
-  // static constexpr Flag NoWrap = 0;
-  static constexpr Flag Wrap = 1 << 3;
+// constexpr Flag NoNullPosition = 0;
+constexpr Flag NullState = 1 << 6;
 
-  // static constexpr Flag Linear = 0;
-  static constexpr Flag NonLinear = 1 << 4;
+// constexpr Flag NonVolatile = 0;
+constexpr Flag Volatile = 1 << 7;
+};// namespace Flags
 
-  // static constexpr Flag PreferredState = 0;
-  static constexpr Flag NoPreferredState = 1 << 5;
+constexpr Input DataVariableAbsolute {Flags::Variable};
+constexpr Input Padding {Flags::Constant};
+}// namespace Input
 
-  // static constexpr Flag NoNullPosition = 0;
-  static constexpr Flag NullState = 1 << 6;
+template <class... Entries>
+class Descriptor final : public Entry<(... + Entries::Size)> {
+ private:
+  using Base = Entry<(... + Entries::Size)>;
 
-  // static constexpr Flag NonVolatile = 0;
-  static constexpr Flag Volatile = 1 << 7;
-
-  static Input DataVariableAbsolute() {
-    return {Variable};
-  }
-  static Input Padding() {
-    return {Constant};
-  }
-};
-
-class Descriptor final {
  public:
   Descriptor() = delete;
 
-  template <std::derived_from<Entry>... Ts>
-  Descriptor(const Ts&... entries) {
-    ([&]() { mSerialized += entries.GetBytes(); }(), ...);
+  constexpr Descriptor(const Entries&... entries) : Base({}) {
+    size_t i = 0;
+    (
+      [&]() {
+        const auto size = entries.size();
+        std::copy_n(entries.data(), size, Base::mSerialized + i);
+        i += size;
+      }(),
+      ...);
   }
-
-  const void* data() const {
-    return mSerialized.data();
-  }
-
-  size_t size() const {
-    return mSerialized.size();
-  }
-
- private:
-  std::basic_string<uint8_t> mSerialized;
 };
 
 }// namespace FAVHID::Descriptors
