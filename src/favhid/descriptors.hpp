@@ -71,7 +71,7 @@ class UsagePage final : public Entry {
   static UsagePage LED() {
     return {0x08};
   }
-  
+
   static UsagePage Button() {
     return {0x09};
   }
@@ -176,11 +176,11 @@ class UsagePage final : public Entry {
     return {0x92};
   }
 
-/* This class doesn't currently support multi-byte values  
-  static UsagePage FIDOAlliance() {
-    return {0xF1D0};
-  }
-*/
+  /* This class doesn't currently support multi-byte values
+    static UsagePage FIDOAlliance() {
+      return {0xF1D0};
+    }
+  */
 };
 
 class Usage final : public Entry {
@@ -275,7 +275,7 @@ class Usage final : public Entry {
   static Usage Rx() {
     return {0x33};
   }
-  
+
   static Usage Ry() {
     return {0x34};
   }
@@ -345,7 +345,7 @@ class UsageMaximum final : public Entry {
   }
 };
 
-class Collection final : public Entry {
+class Collection : public Entry {
  public:
   template <std::derived_from<Entry>... Ts>
   Collection(uint8_t id, const Ts&... ts) : Entry(0xa1, id) {
@@ -353,14 +353,21 @@ class Collection final : public Entry {
     mSerialized += '\xc0';
   }
 
-  template <std::convertible_to<Entry>... Ts>
-  static Collection Physical(const Ts&... ts) {
-    return {0x00, ts...};
-  }
+  class Application;
+  class Physical;
+};
 
-  template <std::convertible_to<Entry>... Ts>
-  static Collection Application(const Ts&... ts) {
-    return {0x01, ts...};
+class Collection::Physical: public Collection {
+ public:
+  template <std::derived_from<Entry>... Ts>
+  Physical(const Ts&... ts) : Collection(0x00, ts...) {
+  }
+};
+
+class Collection::Application : public Collection {
+ public:
+  template <std::derived_from<Entry>... Ts>
+  Application(const Ts&... ts) : Collection(0x01, ts...) {
   }
 };
 

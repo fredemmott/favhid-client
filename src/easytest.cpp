@@ -33,24 +33,28 @@ static void WriteDescriptor(const THandle& handle, uint8_t reportID) {
   Descriptor desc {
     UsagePage::GenericDesktop(),
     Usage::Gamepad(),
-    Collection::Application(Collection::Physical(
-      ReportID(reportID),
-      UsagePage::GenericDesktop(),
-      Usage::X(),
-      Usage::Y(),
-      LogicalMinimum::ForType<int8_t>(),
-      LogicalMaximum::ForType<int8_t>(),
-      ReportSize(8),
-      ReportCount(2),
-      Input::DataVariableAbsolute(),
-      UsagePage::Button(),
-      UsageMinimum(1),
-      UsageMaximum(8),
-      LogicalMinimum(0),
-      LogicalMaximum(1),
-      ReportSize(1),
-      ReportCount(8),
-      Input::DataVariableAbsolute()))};
+    Collection::Application {
+      Collection::Physical {
+        ReportID(reportID),
+        UsagePage::GenericDesktop(),
+        Usage::X(),
+        Usage::Y(),
+        LogicalMinimum::ForType<int8_t>(),
+        LogicalMaximum::ForType<int8_t>(),
+        ReportSize(8),
+        ReportCount(2),
+        Input::DataVariableAbsolute(),
+        UsagePage::Button(),
+        UsageMinimum(1),
+        UsageMaximum(8),
+        LogicalMinimum(0),
+        LogicalMaximum(1),
+        ReportSize(1),
+        ReportCount(8),
+        Input::DataVariableAbsolute(),
+      },
+    },
+  };
 
   PushDescriptor(handle, desc.data(), desc.size());
 }
