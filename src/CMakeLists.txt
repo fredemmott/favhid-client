@@ -7,7 +7,7 @@ add_definitions(
 add_executable(
     easytest
     easytest.cpp
-    io.cpp
+    Arduino.cpp
 )
 
 target_link_libraries(
@@ -19,7 +19,7 @@ target_link_libraries(
 add_executable(
     randomize-serial-number
     randomize-serial-number.cpp
-    io.cpp
+    Arduino.cpp
 )
 
 target_link_libraries(

@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: ISC
 
 #include "favhid/descriptors.hpp"
-#include "favhid/io.hpp"
+#include "favhid/Arduino.hpp"
 #include "favhid/protocol.hpp"
 
 #include <Windows.h>

@@ -1,7 +1,7 @@
 // Copyright 2023 Fred Emmott <fred@fredemmott.com>
 // SPDX-License-Identifier: ISC
 
-#include "favhid/io.hpp"
+#include "favhid/Arduino.hpp"
 
 #include <winrt/base.h>
 
