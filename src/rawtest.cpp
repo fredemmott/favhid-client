@@ -34,7 +34,7 @@ static void PushDescriptor(Arduino& arduino) {
 
   constexpr Descriptor desc {
     UsagePage::GenericDesktop,
-    Usage::Gamepad,
+    Usage::Joystick,
     Collection::Application {
       Collection::Physical {
         ReportID {REPORT_ID},
