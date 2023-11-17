@@ -30,7 +30,7 @@ struct Report {
 static void WriteDescriptor(const THandle& handle, uint8_t reportID) {
   using namespace FAVHID::Descriptors;
 
-  FAVHID::Descriptors::Descriptor desc {
+  Descriptor desc {
     UsagePage::GenericDesktop(),
     Usage::GamePad(),
     Collection::Application(Collection::Physical(
