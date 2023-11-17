@@ -24,8 +24,8 @@ target_include_directories(
     "${CMAKE_CURRENT_SOURCE_DIR}/include"
 )
 
-add_executable(easytest easytest.cpp)
-target_link_libraries(easytest PRIVATE favhid)
+add_executable(rawtest rawtest.cpp)
+target_link_libraries(rawtest PRIVATE favhid)
 
 add_executable(randomize-serial-number randomize-serial-number.cpp)
 target_link_libraries(randomize-serial-number PRIVATE favhid)
