@@ -7,6 +7,8 @@
 
 #include <iostream>
 
+using namespace FAVHID;
+
 static std::string FormatSerial(const std::array<char, SERIAL_SIZE> &serial)
 {
     static_assert(SERIAL_SIZE == sizeof(winrt::guid));

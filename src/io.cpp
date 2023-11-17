@@ -5,6 +5,8 @@
 
 #include "favhid/protocol.hpp"
 
+namespace FAVHID {
+
 constexpr std::string_view MSG_HELLO {"FAVHID" FAVHID_PROTO_VERSION};
 constexpr std::string_view MSG_HELLO_ACK {"ACKVER" FAVHID_PROTO_VERSION};
 
@@ -198,4 +200,6 @@ Response WriteReport(
 
   Write(handle, buf, messageSize);
   return ReadResponse(handle);
+}
+
 }

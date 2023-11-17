@@ -11,6 +11,8 @@
 
 #include <array>
 
+namespace FAVHID {
+
 using THandle = winrt::file_handle;
 
 THandle OpenArduino();
@@ -46,3 +48,5 @@ Response WriteReport(
   uint8_t reportID,
   const void* report,
   size_t size);
+
+}

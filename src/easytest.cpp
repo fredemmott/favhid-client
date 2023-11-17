@@ -14,6 +14,8 @@
 #include "favhid/protocol.hpp"
 #include "favhid/io.hpp"
 
+using namespace FAVHID;
+
 constexpr uint8_t REPORT_ID = 0x03;
 
 constexpr uint8_t HID_DESCRIPTOR[] = {

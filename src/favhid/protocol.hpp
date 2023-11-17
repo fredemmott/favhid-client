@@ -6,6 +6,8 @@
 
 #include <cinttypes>
 
+namespace FAVHID {
+
 #define FAVHID_PROTO_VERSION "2023111601"
 constexpr uint8_t SERIAL_SIZE = 16;
 
@@ -53,3 +55,5 @@ struct PlugDataHeader {
 };
 
 #pragma pack(pop)
+
+}
