@@ -18,3 +18,6 @@ target_link_libraries(test-favjoystate2-report PRIVATE favhid)
 
 add_executable(test-raw test-raw.cpp)
 target_link_libraries(test-raw PRIVATE favhid)
+
+add_executable(test-dynamic-descriptor test-dynamic-descriptor.cpp)
+target_link_libraries(test-dynamic-descriptor PRIVATE favhid-headers)

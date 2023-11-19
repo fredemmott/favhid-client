@@ -4,6 +4,7 @@
 #pragma once
 
 #include <bit>
+#include <cassert>
 #include <cinttypes>
 #include <concepts>
 #include <limits>
@@ -50,9 +51,10 @@ class IntegerEntry : public Entry<sizeof(V) + 2> {
   using Base = Entry<sizeof(V) + 2>;
 
  protected:
-  static constexpr struct {} NoFill;
+  static constexpr struct {
+  } NoFill;
 
-  constexpr IntegerEntry(decltype(NoFill), V value): Base() {
+  constexpr IntegerEntry(decltype(NoFill), V value) : Base() {
     // Strip size
     const uint8_t id = Tag & ~0x03;
     Base::mSerialized[0] = id;
@@ -297,21 +299,24 @@ class Application final : public Collection<Entries...> {
 };
 }// namespace Collection
 
-class ReportID final : public Entry<2> {
+template <class T>
+class ReportID final : public UnsignedIntegerEntry<0x85, T> {
  public:
-  constexpr ReportID(uint8_t id) : Entry<2>(2, 0x85, id) {
+  constexpr ReportID(T id) : UnsignedIntegerEntry<0x85, T>(id) {
   }
 };
 
-class ReportSize final : public Entry<2> {
+template <class T>
+class ReportSize final : public UnsignedIntegerEntry<0x75, T> {
  public:
-  constexpr ReportSize(uint8_t value) : Entry<2>(2, 0x75, value) {
+  constexpr ReportSize(T value) : UnsignedIntegerEntry<0x75, T>(value) {
   }
 };
 
-class ReportCount final : public Entry<2> {
+template<class T>
+class ReportCount final : public UnsignedIntegerEntry<0x95, T> {
  public:
-  constexpr ReportCount(uint8_t value) : Entry<2>(2, 0x95, value) {
+  constexpr ReportCount(T value) : UnsignedIntegerEntry<0x95, T>(value) {
   }
 };
 
@@ -397,3 +402,83 @@ class Descriptor final : public Entry<(... + Entries::MaximumSize)> {
 };
 
 }// namespace FAVHID::Descriptors
+
+namespace FAVHID::Descriptors::Dynamic {
+
+class Descriptor final {
+ public:
+  inline const uint8_t* data() const {
+    return reinterpret_cast<const uint8_t*>(mSerialized.data());
+  }
+
+  inline size_t size() const {
+    return mSerialized.size();
+  }
+
+  template <class... Entries>
+  Descriptor(Entries... entries) {
+    this->append(entries...);
+  }
+
+  template <class... Entries>
+  void append(Entries... entries) {
+    auto i = mSerialized.size();
+    mSerialized.resize(i + (entries.size() + ...));
+    (
+      [&]() {
+        const auto size = entries.size();
+        std::copy_n(entries.data(), size, mSerialized.begin() + i);
+        i += entries.size();
+      }(),
+      ...);
+  }
+
+ private:
+  std::string mSerialized;
+};
+
+namespace Collection {
+
+template <uint8_t CollectionType>
+class Collection final {
+ public:
+  inline const uint8_t* data() const {
+    return reinterpret_cast<const uint8_t*>(mSerialized.data());
+  }
+
+  inline size_t size() const {
+    return mSerialized.size();
+  }
+
+  template <class... Entries>
+  Collection(Entries... entries) {
+    assert(mSerialized.size() == 3);
+    reinterpret_cast<uint8_t*>(mSerialized.data())[1] = CollectionType;
+    this->append(entries...);
+  }
+
+  template <class... Entries>
+  void append(Entries... entries) {
+    auto i = mSerialized.size();
+    mSerialized.resize(i + (entries.size() + ...));
+    i--;// move back before the trailing byte
+    (
+      [&]() {
+        const auto size = entries.size();
+        std::copy_n(entries.data(), size, mSerialized.begin() + i);
+        i += entries.size();
+      }(),
+      ...);
+    mSerialized[i] = '\xc0';
+  }
+
+ private:
+  std::string mSerialized { std::string_view { "\xa1\x00\xc0" , 3 } };
+};
+
+using Physical = Collection<0x00>;
+using Application = Collection<0x01>;
+
+}// namespace Collection
+
+}// namespace FAVHID::Descriptors::Dynamic
