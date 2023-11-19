@@ -12,26 +12,6 @@
 
 namespace FAVHID::Descriptors {
 
-namespace IntegerSuffixes {
-
-constexpr auto operator"" _u8(unsigned long long v) {
-  return static_cast<uint8_t>(v);
-}
-
-constexpr auto operator"" _i8(unsigned long long v) {
-  return static_cast<int8_t>(v);
-}
-
-constexpr auto operator"" _u16(unsigned long long v) {
-  return static_cast<uint16_t>(v);
-}
-
-constexpr auto operator"" _i16(unsigned long long v) {
-  return static_cast<int16_t>(v);
-}
-
-}// namespace IntegerSuffixes
-
 template <size_t N>
 class Entry {
  public:
@@ -42,20 +22,24 @@ class Entry {
   }
 
   constexpr size_t size() const {
-    return N;
+    return mUsedBytes;
   }
 
  protected:
-  Entry() = delete;
-  constexpr Entry(const uint8_t (&value)[N]) {
+  Entry() = default;
+  constexpr Entry(size_t usedBytes, const uint8_t (&value)[N])
+    : mUsedBytes(usedBytes) {
     std::copy_n(value, N, mSerialized);
   }
 
   template <class... Bytes>
-  constexpr Entry(Bytes... bytes)
-    : Entry<sizeof...(Bytes)>({static_cast<uint8_t>(bytes)...}) {};
+  constexpr Entry(size_t usedBytes, Bytes... bytes) : mUsedBytes(usedBytes) {
+    size_t i = 0;
+    ([&]() { mSerialized[i++] = bytes; }(), ...);
+  }
 
-  uint8_t mSerialized[N];
+  uint8_t mSerialized[N] {};
+  size_t mUsedBytes {0};
 };
 
 namespace UsagePage {
@@ -63,7 +47,8 @@ namespace UsagePage {
 template <class... Vs>
 class UsagePage final : public Entry<sizeof...(Vs) + 1> {
  public:
-  constexpr UsagePage(Vs... vs) : Entry<sizeof...(vs) + 1>(0x05, vs...) {
+  constexpr UsagePage(Vs... vs)
+    : Entry<sizeof...(vs) + 1>(sizeof...(vs) + 1, 0x05, vs...) {
   }
 };
 
@@ -111,7 +96,8 @@ namespace Usage {
 template <class... Vs>
 class Usage final : public Entry<sizeof...(Vs) + 1> {
  public:
-  constexpr Usage(Vs... vs) : Entry<sizeof...(vs) + 1>(0x09, vs...) {
+  constexpr Usage(Vs... vs)
+    : Entry<sizeof...(vs) + 1>(sizeof...(vs) + 1, 0x09, vs...) {
   }
 };
 
@@ -169,14 +155,16 @@ constexpr Usage Qw {0x4C};
 template <class... Vs>
 class UsageMinimum final : public Entry<sizeof...(Vs) + 1> {
  public:
-  constexpr UsageMinimum(Vs... vs) : Entry<sizeof...(Vs) + 1>(0x19, vs...) {
+  constexpr UsageMinimum(Vs... vs)
+    : Entry<sizeof...(Vs) + 1>(sizeof...(Vs) + 1, 0x19, vs...) {
   }
 };
 
 template <class... Vs>
 class UsageMaximum final : public Entry<sizeof...(Vs) + 1> {
  public:
-  constexpr UsageMaximum(Vs... vs) : Entry<sizeof...(Vs) + 1>(0x29, vs...) {
+  constexpr UsageMaximum(Vs... vs)
+    : Entry<sizeof...(Vs) + 1>(sizeof...(Vs) + 1, 0x29, vs...) {
   }
 };
 
@@ -199,7 +187,8 @@ class Collection : public Entry<3 + (... + Entries::Size)> {
         i += size;
       }(),
       ...);
-    Base::mSerialized[Base::Size - 1] = '\xc0';
+    Base::mSerialized[i] = '\xc0';
+    Base::mUsedBytes = i + 1;
   }
 };
 
@@ -222,51 +211,74 @@ class Application final : public Collection<Entries...> {
 
 class ReportID final : public Entry<2> {
  public:
-  constexpr ReportID(uint8_t id) : Entry<2>(0x85, id) {
+  constexpr ReportID(uint8_t id) : Entry<2>(2, 0x85, id) {
   }
 };
 
 class ReportSize final : public Entry<2> {
  public:
-  constexpr ReportSize(uint8_t value) : Entry<2>(0x75, value) {
+  constexpr ReportSize(uint8_t value) : Entry<2>(2, 0x75, value) {
   }
 };
 
 class ReportCount final : public Entry<2> {
  public:
-  constexpr ReportCount(uint8_t value) : Entry<2>(0x95, value) {
+  constexpr ReportCount(uint8_t value) : Entry<2>(2, 0x95, value) {
   }
 };
 
+// + 1 byte for id
+// *sometimes* +1 byte to fit values at std::numeric_limits<V>
 template <uint8_t Tag, class V>
-class IntegerEntry : public Entry<sizeof(V) + 1> {
+class IntegerEntry : public Entry<sizeof(V) + 2> {
  private:
-  using Base = Entry<sizeof(V) + 1>;
+  using Base = Entry<sizeof(V) + 2>;
 
  protected:
-  constexpr IntegerEntry(V value) : Base({}) {
+  constexpr IntegerEntry(V value) : Base() {
     // Strip size
-    auto id = Tag & ~0x03;
-    constexpr auto size = sizeof(V);
-    static_assert(size == 0 || size == 1 || size == 2 || size == 4);
-    switch (size) {
-      case 0:
-        break;
+    const uint8_t id = Tag & ~0x03;
+    Base::mSerialized[0] = id;
+
+    if (static_cast<int8_t>(value) == value) {
+      this->Fill<int8_t>(value);
+      return;
+    }
+
+    if (static_cast<int16_t>(value) == value) {
+      this->Fill<int16_t>(value);
+      return;
+    }
+
+    if (static_cast<int32_t>(value) == value) {
+      this->Fill<int32_t>(value);
+      return;
+    }
+
+    // If we reach here, the size bits and the data bytes will be 0
+  }
+
+  template <class FillT>
+  constexpr void Fill(FillT value) {
+    const auto unsigned_v = std::bit_cast<std::make_unsigned_t<FillT>>(value);
+
+    auto& id = Base::mSerialized[0];
+    switch (sizeof(value)) {
       case 1:
-        id = id | 1;
+        id |= 1;
         break;
       case 2:
-        id = id | 2;
+        id |= 2;
         break;
       case 4:
-        id = id | 4;
+        id |= 3;// careful now
         break;
     }
 
-    Base::mSerialized[0] = id;
-    for (int i = 1; i <= sizeof(value); ++i) {
-      Base::mSerialized[i] = static_cast<uint8_t>(value >> ((i - 1) * 8));
+    for (int i = 0; i < sizeof(value); ++i) {
+      Base::mSerialized[i + 1] = static_cast<uint8_t>(unsigned_v >> (i * 8));
     }
+    Base::mUsedBytes = sizeof(value)+ 1;
   }
 };
 
@@ -292,7 +304,7 @@ class LogicalMaximum final : public IntegerEntry<0x25, V> {
 namespace Input {
 class Input final : public Entry<2> {
  public:
-  constexpr Input(uint8_t flags) : Entry(0x81, flags) {
+  constexpr Input(uint8_t flags) : Entry(2, 0x81, flags) {
   }
 };
 
@@ -325,7 +337,8 @@ constexpr Flag Volatile = 1 << 7;
 };// namespace Flags
 
 constexpr Input DataVariableAbsolute {Flags::Variable};
-constexpr Input DataVariableAbsoluteNullState {Flags::Variable | Flags::NullState};
+constexpr Input DataVariableAbsoluteNullState {
+  Flags::Variable | Flags::NullState};
 constexpr Input Padding {Flags::Constant};
 }// namespace Input
 
@@ -346,6 +359,7 @@ class Descriptor final : public Entry<(... + Entries::Size)> {
         i += size;
       }(),
       ...);
+    Base::mUsedBytes = i;
   }
 };
 

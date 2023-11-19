@@ -14,7 +14,6 @@ namespace {
 template <uint8_t reportID>
 constexpr auto MakeDescriptor() {
   using namespace FAVHID::Descriptors;
-  using namespace FAVHID::Descriptors::IntegerSuffixes;
 
   return Descriptor {
     UsagePage::GenericDesktop,
@@ -40,18 +39,18 @@ constexpr auto MakeDescriptor() {
         Usage::HatSwitch,
         Usage::HatSwitch,
         Usage::HatSwitch,
-        LogicalMinimum {0_u8},
-        LogicalMaximum {7_u8},
-        ReportSize {4_u8},
-        ReportCount {4_u8},
+        LogicalMinimum {0},
+        LogicalMaximum {7},
+        ReportSize {4},
+        ReportCount {4},
         Input::DataVariableAbsoluteNullState,
         UsagePage::Button,
-        UsageMinimum {1_u8},
-        UsageMaximum {128_u8},
-        LogicalMinimum {0_u8},
-        LogicalMaximum {1_u8},
-        ReportSize {1_u8},
-        ReportCount {128_u8},
+        UsageMinimum {1},
+        UsageMaximum {128},
+        LogicalMinimum {0},
+        LogicalMaximum {1},
+        ReportSize {1},
+        ReportCount {128},
         Input::DataVariableAbsolute,
         // int16_t vx, vy, vz;
         // int16_t rvx, rvy, rvz;
@@ -89,6 +88,7 @@ constexpr Descriptor DESCRIPTORS[FAVJoyState2::MAX_DEVICES] {
   MakeDescriptor<REPORT_IDS[6]>(),
   MakeDescriptor<REPORT_IDS[7]>(),
 };
+constexpr auto size = DESCRIPTORS[0].size();
 
 // Varies depending on how many devices we're attaching
 constexpr OpaqueID CONFIG_IDS[FAVJoyState2::MAX_DEVICES] {
@@ -167,7 +167,8 @@ FAVJoyState2::FAVJoyState2(uint8_t deviceCount, Arduino&& a)
   }
 
   for (int i = 0; i < deviceCount; ++i) {
-    mDevice.PushDescriptor(&DESCRIPTORS[i], sizeof(Descriptor));
+    const auto& descriptor = DESCRIPTORS[i];
+    mDevice.PushDescriptor(descriptor.data(), descriptor.size());
   }
   mDevice.SetVolatileConfigID(mConfigID);
 

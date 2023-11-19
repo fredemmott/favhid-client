@@ -30,7 +30,6 @@ struct Report {
 
 static void PushDescriptor(Arduino& arduino) {
   using namespace FAVHID::Descriptors;
-  using namespace FAVHID::Descriptors::IntegerSuffixes;
 
   constexpr Descriptor desc {
     UsagePage::GenericDesktop,
@@ -43,16 +42,16 @@ static void PushDescriptor(Arduino& arduino) {
         Usage::Y,
         LogicalMinimum<int8_t> {},
         LogicalMaximum<int8_t> {},
-        ReportSize {8_u8},
-        ReportCount {2_u8},
+        ReportSize {8},
+        ReportCount {2},
         Input::DataVariableAbsolute,
         UsagePage::Button,
-        UsageMinimum {1_u8},
-        UsageMaximum {8_u8},
-        LogicalMinimum {0_u8},
-        LogicalMaximum {1_u8},
-        ReportSize {1_u8},
-        ReportCount {8_u8},
+        UsageMinimum {1},
+        UsageMaximum {8},
+        LogicalMinimum {0},
+        LogicalMaximum {1},
+        ReportSize {1},
+        ReportCount {8},
         Input::DataVariableAbsolute,
       },
     },
