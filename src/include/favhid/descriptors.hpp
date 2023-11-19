@@ -42,13 +42,102 @@ class Entry {
   size_t mUsedBytes {0};
 };
 
+// + 1 byte for id
+// *sometimes* +1 byte to fit values at std::numeric_limits<V>
+template <uint8_t Tag, class V>
+class IntegerEntry : public Entry<sizeof(V) + 2> {
+ private:
+  using Base = Entry<sizeof(V) + 2>;
+
+ protected:
+  static constexpr struct {} NoFill;
+
+  constexpr IntegerEntry(decltype(NoFill), V value): Base() {
+    // Strip size
+    const uint8_t id = Tag & ~0x03;
+    Base::mSerialized[0] = id;
+  }
+
+  constexpr IntegerEntry(V value) : IntegerEntry(NoFill, value) {
+    this->FillSmallest(value);
+  }
+
+  constexpr void FillSmallest(V value) {
+    if (static_cast<int8_t>(value) == value) {
+      this->Fill<int8_t>(value);
+      return;
+    }
+
+    if (static_cast<int16_t>(value) == value) {
+      this->Fill<int16_t>(value);
+      return;
+    }
+
+    if (static_cast<int32_t>(value) == value) {
+      this->Fill<int32_t>(value);
+      return;
+    }
+
+    // If we reach here, the size bits and the data bytes will be 0
+  }
+
+  template <class FillT>
+  constexpr void Fill(FillT value) {
+    const auto unsigned_v = std::bit_cast<std::make_unsigned_t<FillT>>(value);
+
+    auto& id = Base::mSerialized[0];
+    switch (sizeof(value)) {
+      case 1:
+        id |= 1;
+        break;
+      case 2:
+        id |= 2;
+        break;
+      case 4:
+        id |= 3;// careful now
+        break;
+    }
+
+    for (int i = 0; i < sizeof(value); ++i) {
+      Base::mSerialized[i + 1] = static_cast<uint8_t>(unsigned_v >> (i * 8));
+    }
+    Base::mUsedBytes = sizeof(value) + 1;
+  }
+};
+
+template <uint8_t Tag, class V>
+class UnsignedIntegerEntry : public IntegerEntry<Tag, V> {
+  using Base = IntegerEntry<Tag, V>;
+
+ protected:
+  constexpr UnsignedIntegerEntry(V value) : Base(Base::NoFill, value) {
+    this->FillSmallest(value);
+  }
+
+  constexpr void FillSmallest(V value) {
+    if (static_cast<uint8_t>(value) == value) {
+      this->template Fill<uint8_t>(value);
+      return;
+    }
+
+    if (static_cast<uint16_t>(value) == value) {
+      this->template Fill<uint16_t>(value);
+      return;
+    }
+
+    if (static_cast<uint32_t>(value) == value) {
+      this->template Fill<int32_t>(value);
+      return;
+    }
+  }
+};
+
 namespace UsagePage {
 
-template <class... Vs>
-class UsagePage final : public Entry<sizeof...(Vs) + 1> {
+class UsagePage final : public UnsignedIntegerEntry<0x05, uint16_t> {
  public:
-  constexpr UsagePage(Vs... vs)
-    : Entry<sizeof...(vs) + 1>(sizeof...(vs) + 1, 0x05, vs...) {
+  constexpr UsagePage(const uint16_t value)
+    : UnsignedIntegerEntry<0x05, uint16_t>(value) {
   }
 };
 
@@ -87,8 +176,7 @@ constexpr UsagePage CameraControl {0x90};
 constexpr UsagePage Arcade {0x91};
 constexpr UsagePage GamingDevice {0x92};
 
-// This class doesn't currently support multi-byte values
-// static constexpr UsagePage FIDOAlliance {0xF1D0};
+constexpr UsagePage FIDOAlliance {0xF1D0};
 }// namespace UsagePage
 
 namespace Usage {
@@ -224,61 +312,6 @@ class ReportSize final : public Entry<2> {
 class ReportCount final : public Entry<2> {
  public:
   constexpr ReportCount(uint8_t value) : Entry<2>(2, 0x95, value) {
-  }
-};
-
-// + 1 byte for id
-// *sometimes* +1 byte to fit values at std::numeric_limits<V>
-template <uint8_t Tag, class V>
-class IntegerEntry : public Entry<sizeof(V) + 2> {
- private:
-  using Base = Entry<sizeof(V) + 2>;
-
- protected:
-  constexpr IntegerEntry(V value) : Base() {
-    // Strip size
-    const uint8_t id = Tag & ~0x03;
-    Base::mSerialized[0] = id;
-
-    if (static_cast<int8_t>(value) == value) {
-      this->Fill<int8_t>(value);
-      return;
-    }
-
-    if (static_cast<int16_t>(value) == value) {
-      this->Fill<int16_t>(value);
-      return;
-    }
-
-    if (static_cast<int32_t>(value) == value) {
-      this->Fill<int32_t>(value);
-      return;
-    }
-
-    // If we reach here, the size bits and the data bytes will be 0
-  }
-
-  template <class FillT>
-  constexpr void Fill(FillT value) {
-    const auto unsigned_v = std::bit_cast<std::make_unsigned_t<FillT>>(value);
-
-    auto& id = Base::mSerialized[0];
-    switch (sizeof(value)) {
-      case 1:
-        id |= 1;
-        break;
-      case 2:
-        id |= 2;
-        break;
-      case 4:
-        id |= 3;// careful now
-        break;
-    }
-
-    for (int i = 0; i < sizeof(value); ++i) {
-      Base::mSerialized[i + 1] = static_cast<uint8_t>(unsigned_v >> (i * 8));
-    }
-    Base::mUsedBytes = sizeof(value)+ 1;
   }
 };
 
