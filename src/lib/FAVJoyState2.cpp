@@ -88,7 +88,6 @@ constexpr Descriptor DESCRIPTORS[FAVJoyState2::MAX_DEVICES] {
   MakeDescriptor<REPORT_IDS[6]>(),
   MakeDescriptor<REPORT_IDS[7]>(),
 };
-constexpr auto size = DESCRIPTORS[0].size();
 
 // Varies depending on how many devices we're attaching
 constexpr OpaqueID CONFIG_IDS[FAVJoyState2::MAX_DEVICES] {
