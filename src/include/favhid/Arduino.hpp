@@ -64,9 +64,6 @@ class Arduino final {
 
   static std::optional<Arduino> Open();
   static std::optional<Arduino> Open(const OpaqueID& serial);
-  inline static std::optional<Arduino> Open(const GUID& serial) {
-    return Open(reinterpret_cast<const OpaqueID&>(serial));
-  }
 
   /* Push a new HID descriptor to the end of the list.
    *
@@ -89,9 +86,6 @@ class Arduino final {
    * detecting when the device needs to be rebooted/cleared.
    */
   void SetVolatileConfigID(const OpaqueID&);
-  inline void SetVolatileConfigID(const GUID& id) {
-    return SetVolatileConfigID(reinterpret_cast<const OpaqueID&>(id));
-  }
   OpaqueID GetVolatileConfigID();
 
   /* Reset the USB connection.

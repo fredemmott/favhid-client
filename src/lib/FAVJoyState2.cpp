@@ -10,30 +10,11 @@
 namespace FAVHID {
 
 namespace {
-#pragma pack(push, 1)
-struct Report final {
-  int16_t x, y, z, rx, ry, rz;
-  int16_t slider[2];
-  uint16_t povs;// 4 POV hats, 4 bits each
-  uint8_t buttons[128 / 8];
-  // int16_t vx, vy, vz;
-  // int16_t rvx, rvy, rvz;
-  // int16_t vslider[2];
-  // int16_t ax, ay, az;
-  // int16_t arx, ary, arz;
-  // int16_t aslider[2];
-  // int16_t fx, fy, fz;
-  // int16_t frx, fry, frz;
-  // int16_t fslider[2];
-};
-#pragma pack(pop)
 
 template <uint8_t reportID>
 constexpr auto MakeDescriptor() {
   using namespace FAVHID::Descriptors;
   using namespace FAVHID::Descriptors::IntegerSuffixes;
-
-  constexpr auto a = LogicalMaximum<int16_t> {};
 
   return Descriptor {
     UsagePage::GenericDesktop,
@@ -183,7 +164,7 @@ void FAVJoyState2::WriteReport(const DIJOYSTATE2& di, uint8_t deviceIndex) {
     },
   };
 
-  // TODO: POVs
+  // Convert POVs from centidegrees
   for (off_t i = 0; i < 4; ++i) {
     const auto diValue = di.rgdwPOV[i];
     const auto centered = (LOWORD(diValue) == 0xFFFF);
@@ -195,6 +176,7 @@ void FAVJoyState2::WriteReport(const DIJOYSTATE2& di, uint8_t deviceIndex) {
     byte |= (value << bitOffset);
   }
 
+  // Convert buttons from byte with high-bit to just a bit mask
   constexpr uint8_t BUTTON_ON_BIT = (1 << 7);
   for (off_t i = 0; i < 128; ++i) {
     if (!(di.rgbButtons[i] & BUTTON_ON_BIT)) {
@@ -207,6 +189,13 @@ void FAVJoyState2::WriteReport(const DIJOYSTATE2& di, uint8_t deviceIndex) {
     byte |= (1 << bitOffset);
   }
 
+  this->WriteReport(report, deviceIndex);
+}
+
+void FAVJoyState2::WriteReport(const Report& report, uint8_t deviceIndex) {
+  if (deviceIndex >= mCount) {
+    throw std::logic_error("Device index is >= device count");
+  }
   mDevice.WriteReport(REPORT_IDS[deviceIndex], &report, sizeof(report));
 }
 
