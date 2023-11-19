@@ -204,11 +204,7 @@ void FAVJoyState2::WriteReport(const DIJOYSTATE2& di, uint8_t deviceIndex) {
     const auto diValue = di.rgdwPOV[i];
     const auto centered = (LOWORD(diValue) == 0xFFFF);
     const uint8_t value = centered ? 0b1111 : diValue / 4500;
-    const auto bitOffset = 4 * (i % 2);
-    const auto byteOffset = ((4 * i) - bitOffset) / 8;
-
-    auto& byte = reinterpret_cast<uint8_t*>(&report.povs)[byteOffset];
-    byte |= (value << bitOffset);
+    report.SetPOV(i, value);
   }
 
   // Convert buttons from byte with high-bit to just a bit mask
@@ -217,11 +213,7 @@ void FAVJoyState2::WriteReport(const DIJOYSTATE2& di, uint8_t deviceIndex) {
     if (!(di.rgbButtons[i] & BUTTON_ON_BIT)) {
       continue;
     }
-    const auto bitOffset = i % 8;
-    const auto byteOffset = (i - bitOffset) / 8;
-
-    auto& byte = report.buttons[byteOffset];
-    byte |= (1 << bitOffset);
+    report.SetButton(i);
   }
 
   this->WriteReport(report, deviceIndex);

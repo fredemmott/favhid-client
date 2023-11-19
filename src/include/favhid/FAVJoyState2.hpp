@@ -5,6 +5,8 @@
 
 #include "Arduino.hpp"
 
+#include <stdexcept>
+
 #include <dinput.h>
 
 namespace FAVHID {
@@ -69,6 +71,35 @@ class FAVJoyState2 final {
     // int16_t fx, fy, fz;
     // int16_t frx, fry, frz;
     // int16_t fslider[2];
+
+    inline void SetButton(uint8_t buttonIndex, bool on = true) {
+      if (buttonIndex >= (sizeof(buttons) * 8)) {
+        throw std::logic_error("button index out of range");
+      }
+
+      const uint8_t bitOffset = buttonIndex % 8;
+      const uint8_t byteOffset = (buttonIndex - bitOffset) / 8;
+
+      auto& byte = this->buttons[byteOffset];
+      if (on) {
+        byte |= (1 << bitOffset);
+      } else {
+        byte &= ~static_cast<uint8_t>(1 << bitOffset);
+      }
+    }
+
+    // See documentation of 'povs' field for information
+    // on values
+    inline void SetPOV(uint8_t hatIndex, uint8_t value) {
+      if (hatIndex >= (sizeof(povs) * 2)) {
+        throw std::logic_error("hat index out of range");
+      }
+
+      const auto bitOffset = 4 * (hatIndex % 2);
+      const auto byteOffset = ((4 * hatIndex) - bitOffset) / 8;
+      auto& byte = reinterpret_cast<uint8_t*>(&this->povs)[byteOffset];
+      byte |= (value << bitOffset);
+    }
   };
 #pragma pack(pop)
   // Write the specified raw HID report.
