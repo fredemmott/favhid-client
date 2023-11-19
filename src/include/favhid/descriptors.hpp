@@ -15,7 +15,7 @@ namespace FAVHID::Descriptors {
 template <size_t N>
 class Entry {
  public:
-  static constexpr size_t Size = N;
+  static constexpr size_t MaximumSize = N;
 
   constexpr const uint8_t* data() const {
     return mSerialized;
@@ -259,9 +259,9 @@ class UsageMaximum final : public Entry<sizeof...(Vs) + 1> {
 namespace Collection {
 
 template <class... Entries>
-class Collection : public Entry<3 + (... + Entries::Size)> {
+class Collection : public Entry<3 + (... + Entries::MaximumSize)> {
  private:
-  using Base = Entry<3 + (... + Entries::Size)>;
+  using Base = Entry<3 + (... + Entries::MaximumSize)>;
 
  public:
   constexpr Collection(uint8_t id, const Entries&... entries) : Base({}) {
@@ -376,9 +376,9 @@ constexpr Input Padding {Flags::Constant};
 }// namespace Input
 
 template <class... Entries>
-class Descriptor final : public Entry<(... + Entries::Size)> {
+class Descriptor final : public Entry<(... + Entries::MaximumSize)> {
  private:
-  using Base = Entry<(... + Entries::Size)>;
+  using Base = Entry<(... + Entries::MaximumSize)>;
 
  public:
   Descriptor() = delete;
