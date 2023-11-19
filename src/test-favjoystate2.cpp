@@ -8,7 +8,7 @@
 #include <thread>
 
 int main() {
-  constexpr uint8_t VIRTUAL_DEVICE_COUNT = 2;
+  constexpr uint8_t VIRTUAL_DEVICE_COUNT = FAVHID::FAVJoyState2::MAX_DEVICES;
   auto favhid = FAVHID::FAVJoyState2::Open(VIRTUAL_DEVICE_COUNT);
   if (!favhid) {
     return 1;

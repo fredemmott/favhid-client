@@ -16,7 +16,7 @@ class FAVJoyState2 final {
  public:
   FAVJoyState2() = delete;
 
-  static constexpr uint8_t MAX_DEVICES = 4;
+  static constexpr uint8_t MAX_DEVICES = 8;
 
   // Open the the first Arduino Micro running compatible firmware, and create
   // the specified number of virtual joysticks

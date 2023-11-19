@@ -72,6 +72,10 @@ constexpr uint8_t REPORT_IDS[FAVJoyState2::MAX_DEVICES] {
   FIRST_AVAILABLE_REPORT_ID + 1,
   FIRST_AVAILABLE_REPORT_ID + 2,
   FIRST_AVAILABLE_REPORT_ID + 3,
+  FIRST_AVAILABLE_REPORT_ID + 4,
+  FIRST_AVAILABLE_REPORT_ID + 5,
+  FIRST_AVAILABLE_REPORT_ID + 6,
+  FIRST_AVAILABLE_REPORT_ID + 7,
 };
 
 using Descriptor = decltype(MakeDescriptor<REPORT_IDS[0]>());
@@ -80,6 +84,10 @@ constexpr Descriptor DESCRIPTORS[FAVJoyState2::MAX_DEVICES] {
   MakeDescriptor<REPORT_IDS[1]>(),
   MakeDescriptor<REPORT_IDS[2]>(),
   MakeDescriptor<REPORT_IDS[3]>(),
+  MakeDescriptor<REPORT_IDS[4]>(),
+  MakeDescriptor<REPORT_IDS[5]>(),
+  MakeDescriptor<REPORT_IDS[6]>(),
+  MakeDescriptor<REPORT_IDS[7]>(),
 };
 
 // Varies depending on how many devices we're attaching
@@ -111,6 +119,33 @@ constexpr OpaqueID CONFIG_IDS[FAVJoyState2::MAX_DEVICES] {
     0x1799,
     0x41a2,
     {0xb8, 0x39, 0x84, 0xd9, 0x99, 0xda, 0xdb, 0x38},
+  },// {84458de2-bc0a-43b0-9346-57c46dd9f11f}
+  OpaqueID {
+    0x84458de2,
+    0xbc0a,
+    0x43b0,
+    {0x93, 0x46, 0x57, 0xc4, 0x6d, 0xd9, 0xf1, 0x1f},
+  },
+  // {342fa25d-3626-4ee2-998e-ded7801959f4}
+  OpaqueID {
+    0x342fa25d,
+    0x3626,
+    0x4ee2,
+    {0x99, 0x8e, 0xde, 0xd7, 0x80, 0x19, 0x59, 0xf4},
+  },
+  // {635c14ff-cdf9-4fa8-9f83-43d30c429ba0}
+  OpaqueID {
+    0x635c14ff,
+    0xcdf9,
+    0x4fa8,
+    {0x9f, 0x83, 0x43, 0xd3, 0x0c, 0x42, 0x9b, 0xa0},
+  },
+  // {827a4ec3-b892-4b74-9b04-a278f5bdd6d3}
+  OpaqueID {
+    0x827a4ec3,
+    0xb892,
+    0x4b74,
+    {0x9b, 0x04, 0xa2, 0x78, 0xf5, 0xbd, 0xd6, 0xd3},
   },
 };
 
