@@ -29,4 +29,10 @@ std::string OpaqueID::HumanReadable() const {
     return winrt::to_string(winrt::to_hstring(guid));
 }
 
+std::string OpaqueID::ToUSBSerialString() const {
+  std::string ret(USB_SERIAL_STRING_LENGTH, '\0');
+  ToUSBSerialString(ret.data(), ret.size());
+  return ret;
+}
+
 }// namespace FAVHID
