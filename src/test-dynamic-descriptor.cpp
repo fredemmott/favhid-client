@@ -39,10 +39,11 @@ int main() {
 
   {
     auto physColl = Dynamic::Collection::Physical {
-      ReportID { force_runtime_eval(REPORT_ID) },
-      UsagePage::GenericDesktop,
+      ReportID {force_runtime_eval(REPORT_ID)},
+      UsagePage::UsagePage(
+        force_runtime_eval(UsagePage::GenericDesktop.data()[1])),
     };
-    physColl.append(force_runtime_eval(Usage::X), force_runtime_eval(Usage::Y));
+    physColl.append(Usage::Usage(force_runtime_eval(Usage::X.data()[1])), Usage::Usage(force_runtime_eval(Usage::Y.data()[1])));
     physColl.append(
       LogicalMinimum(force_runtime_eval(std::numeric_limits<int8_t>::min())),
       LogicalMaximum(force_runtime_eval(std::numeric_limits<int8_t>::max())),
@@ -54,6 +55,11 @@ int main() {
   }
 
   assert(constantDescriptor.size() == dynamicDescriptor.size());
-  assert(memcmp(constantDescriptor.data(), dynamicDescriptor.data(), constantDescriptor.size()) == 0);
+  assert(
+    memcmp(
+      constantDescriptor.data(),
+      dynamicDescriptor.data(),
+      constantDescriptor.size())
+    == 0);
   return 0;
 }

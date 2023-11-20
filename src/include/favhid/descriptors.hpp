@@ -13,10 +13,10 @@
 
 namespace FAVHID::Descriptors {
 
-template <size_t N>
+template <size_t TCapacity>
 class Entry {
  public:
-  static constexpr size_t MaximumSize = N;
+  static constexpr size_t Capacity = TCapacity;
 
   constexpr const uint8_t* data() const {
     return mSerialized;
@@ -28,18 +28,8 @@ class Entry {
 
  protected:
   Entry() = default;
-  constexpr Entry(size_t usedBytes, const uint8_t (&value)[N])
-    : mUsedBytes(usedBytes) {
-    std::copy_n(value, N, mSerialized);
-  }
 
-  template <class... Bytes>
-  constexpr Entry(size_t usedBytes, Bytes... bytes) : mUsedBytes(usedBytes) {
-    size_t i = 0;
-    ([&]() { mSerialized[i++] = bytes; }(), ...);
-  }
-
-  uint8_t mSerialized[N] {};
+  uint8_t mSerialized[TCapacity] {};
   size_t mUsedBytes {0};
 };
 
@@ -136,10 +126,10 @@ class UnsignedIntegerEntry : public IntegerEntry<Tag, V> {
 
 namespace UsagePage {
 
-class UsagePage final : public UnsignedIntegerEntry<0x05, uint16_t> {
+template <class V>
+class UsagePage final : public UnsignedIntegerEntry<0x05, V> {
  public:
-  constexpr UsagePage(const uint16_t value)
-    : UnsignedIntegerEntry<0x05, uint16_t>(value) {
+  constexpr UsagePage(V value) : UnsignedIntegerEntry<0x05, V>(value) {
   }
 };
 
@@ -183,11 +173,10 @@ constexpr UsagePage FIDOAlliance {0xF1D0};
 
 namespace Usage {
 
-template <class... Vs>
-class Usage final : public Entry<sizeof...(Vs) + 1> {
+template <class V>
+class Usage final : public UnsignedIntegerEntry<0x09, V> {
  public:
-  constexpr Usage(Vs... vs)
-    : Entry<sizeof...(vs) + 1>(sizeof...(vs) + 1, 0x09, vs...) {
+  constexpr Usage(V value) : UnsignedIntegerEntry<0x09, V>(value) {
   }
 };
 
@@ -242,31 +231,29 @@ constexpr Usage Qw {0x4C};
 
 }// namespace Usage
 
-template <class... Vs>
-class UsageMinimum final : public Entry<sizeof...(Vs) + 1> {
+template <class V>
+class UsageMinimum final : public UnsignedIntegerEntry<0x19, V> {
  public:
-  constexpr UsageMinimum(Vs... vs)
-    : Entry<sizeof...(Vs) + 1>(sizeof...(Vs) + 1, 0x19, vs...) {
+  constexpr UsageMinimum(V value) : UnsignedIntegerEntry<0x19, V>(value) {
   }
 };
 
-template <class... Vs>
-class UsageMaximum final : public Entry<sizeof...(Vs) + 1> {
+template <class V>
+class UsageMaximum final : public UnsignedIntegerEntry<0x29, V> {
  public:
-  constexpr UsageMaximum(Vs... vs)
-    : Entry<sizeof...(Vs) + 1>(sizeof...(Vs) + 1, 0x29, vs...) {
+  constexpr UsageMaximum(V value) : UnsignedIntegerEntry<0x29, V>(value) {
   }
 };
 
 namespace Collection {
 
 template <class... Entries>
-class Collection : public Entry<3 + (... + Entries::MaximumSize)> {
+class Collection : public Entry<3 + (... + Entries::Capacity)> {
  private:
-  using Base = Entry<3 + (... + Entries::MaximumSize)>;
+  using Base = Entry<3 + (... + Entries::Capacity)>;
 
  public:
-  constexpr Collection(uint8_t id, const Entries&... entries) : Base({}) {
+  constexpr Collection(uint8_t id, const Entries&... entries) : Base() {
     Base::mSerialized[0] = 0xa1;
     Base::mSerialized[1] = id;
     size_t i = 2;
@@ -313,7 +300,7 @@ class ReportSize final : public UnsignedIntegerEntry<0x75, T> {
   }
 };
 
-template<class T>
+template <class T>
 class ReportCount final : public UnsignedIntegerEntry<0x95, T> {
  public:
   constexpr ReportCount(T value) : UnsignedIntegerEntry<0x95, T>(value) {
@@ -340,9 +327,10 @@ class LogicalMaximum final : public IntegerEntry<0x25, V> {
 };
 
 namespace Input {
-class Input final : public Entry<2> {
+template <class V>
+class Input final : public UnsignedIntegerEntry<0x81, V> {
  public:
-  constexpr Input(uint8_t flags) : Entry(2, 0x81, flags) {
+  constexpr Input(V flags) : UnsignedIntegerEntry<0x81, V>(flags) {
   }
 };
 
@@ -381,14 +369,14 @@ constexpr Input Padding {Flags::Constant};
 }// namespace Input
 
 template <class... Entries>
-class Descriptor final : public Entry<(... + Entries::MaximumSize)> {
+class Descriptor final : public Entry<(... + Entries::Capacity)> {
  private:
-  using Base = Entry<(... + Entries::MaximumSize)>;
+  using Base = Entry<(... + Entries::Capacity)>;
 
  public:
   Descriptor() = delete;
 
-  constexpr Descriptor(const Entries&... entries) : Base({}) {
+  constexpr Descriptor(const Entries&... entries) : Base() {
     size_t i = 0;
     (
       [&]() {
@@ -473,7 +461,7 @@ class Collection final {
   }
 
  private:
-  std::string mSerialized { std::string_view { "\xa1\x00\xc0" , 3 } };
+  std::string mSerialized {std::string_view {"\xa1\x00\xc0", 3}};
 };
 
 using Physical = Collection<0x00>;
