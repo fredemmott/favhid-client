@@ -98,6 +98,7 @@ class FAVJoyState2 final {
       const auto bitOffset = 4 * (hatIndex % 2);
       const auto byteOffset = ((4 * hatIndex) - bitOffset) / 8;
       auto& byte = reinterpret_cast<uint8_t*>(&this->povs)[byteOffset];
+      byte &= ~(0b1111 << bitOffset);
       byte |= (value << bitOffset);
     }
   };
