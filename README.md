@@ -4,6 +4,12 @@ Fred's Arduino Virtual HID (FAVHID) is a sketch (program) for the Arduino Micro 
 
 This is a C++ client library for FAVHID ; you can find the arduino sketch (firmware) in the [FAVHID repository](https://github.com/fredemmott/favhid).
 
+## Examples
+
+- Simple mode: [src/test-favjoystate2-report.cpp](src/test-favjoystate2-report.cpp)
+- DIJOYSTATE2 mode: [src/test-favjoystate2-dinput-style.cpp](src/test-favjoystate2-dinput-style.cpp)
+- Low-level with custom HID descriptor: [src/test-raw.cpp](src/test-raw.cpp)
+
 ## Contents
 
 - `descriptors.hpp` is a small library for creating HID descriptors; they can be dynamic or compile-time evaluated.
