@@ -7,7 +7,35 @@
 #include <numbers>
 #include <thread>
 
+#include <iostream>
+#include <format>
+
+
+static void test_hat_math() {
+  #define CHECK(x) std::cout << ((x) ? "OK: ": "FAIL: ") << #x << std::endl;
+
+  FAVHID::FAVJoyState2::Report report {};
+
+  report.SetPOV(0, 1);
+  CHECK(report.povs[1] == 0b00011111);
+  report.SetPOV(1, 1);
+  CHECK(report.povs[1] == 0b00010001);
+
+  report.SetPOV(2, 1);
+  CHECK(report.povs[0] == 0b00011111);
+  report.SetPOV(3, 1);
+  CHECK(report.povs[0] == 0b00010001);
+
+  #undef CHECK
+}
+
+static void unit_tests() {
+  test_hat_math();
+}
+
 int main() {
+  unit_tests();
+
   constexpr uint8_t VIRTUAL_DEVICE_COUNT = FAVHID::FAVJoyState2::MAX_DEVICES;
   auto favhid = FAVHID::FAVJoyState2::Open(VIRTUAL_DEVICE_COUNT);
   if (!favhid) {

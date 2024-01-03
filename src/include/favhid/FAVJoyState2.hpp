@@ -55,8 +55,12 @@ class FAVJoyState2 final {
      *   - 0b0101: SW
      *   - 0b0110: W
      *   - 0b0111: NW
+     *
+     * IMPORTANT: these are 4 sequential 4-byte fields - so,
+     * despite the values being little-endian, the fields are
+     * in the opposite order to what you'd expect
      */
-    uint16_t povs;
+    uint8_t povs[2] { 0xff, 0xff };
     // 128 buttons, 1 bit per button
     uint8_t buttons[128 / 8];
 
@@ -95,9 +99,10 @@ class FAVJoyState2 final {
         throw std::logic_error("hat index out of range");
       }
 
-      const auto bitOffset = 4 * (hatIndex % 2);
-      const auto byteOffset = ((4 * hatIndex) - bitOffset) / 8;
-      auto& byte = reinterpret_cast<uint8_t*>(&this->povs)[byteOffset];
+      const auto bitOffset = 4 - (4 * (hatIndex % 2));
+      const auto byteOffset = 1 - (hatIndex / 2);
+      auto& byte = this->povs[byteOffset];
+
       byte &= ~(0b1111 << bitOffset);
       byte |= (value << bitOffset);
     }
