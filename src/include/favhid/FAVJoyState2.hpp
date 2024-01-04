@@ -20,6 +20,8 @@ class FAVJoyState2 final {
 
   static constexpr uint8_t MAX_DEVICES = 8;
 
+  static std::string_view GetDescriptor(uint8_t device);
+
   // Open the the first Arduino Micro running compatible firmware, and create
   // the specified number of virtual joysticks
   static std::optional<FAVJoyState2> Open(uint8_t deviceCount = 1);

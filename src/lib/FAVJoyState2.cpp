@@ -150,6 +150,11 @@ constexpr OpaqueID CONFIG_IDS[FAVJoyState2::MAX_DEVICES] {
 
 }// namespace
 
+std::string_view FAVJoyState2::GetDescriptor(uint8_t device) {
+  const auto& descriptor = DESCRIPTORS[device];
+  return { reinterpret_cast<const char*>(descriptor.data()), descriptor.size() };
+}
+
 FAVJoyState2::FAVJoyState2(uint8_t deviceCount, Arduino&& a)
   : mDevice(std::move(a)),
     mCount(deviceCount),
