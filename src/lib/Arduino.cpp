@@ -15,7 +15,7 @@ constexpr std::string_view MSG_HELLO_ACK {"ACKVER" FAVHID_PROTO_VERSION};
 static void
 WriteArduino(const winrt::file_handle& handle, const void* data, size_t size) {
   auto h = handle.get();
-  winrt::check_bool(WriteFile(h, data, size, nullptr, nullptr));
+  winrt::check_bool(WriteFile(h, data, static_cast<DWORD>(size), nullptr, nullptr));
   winrt::check_bool(FlushFileBuffers(h));
 }
 
@@ -59,7 +59,7 @@ winrt::file_handle Arduino::OpenHandle(const std::optional<OpaqueID>& serial) {
   if (GetCommPorts(ports, 255, &count) != ERROR_SUCCESS) {
     return {};
   }
-  for (int i = 0; i < count; ++i) {
+  for (ULONG i = 0; i < count; ++i) {
     try {
       auto f = OpenArduino(ports[i]);
 

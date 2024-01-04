@@ -56,17 +56,17 @@ class IntegerEntry : public Entry<sizeof(V) + 2> {
 
   constexpr void FillSmallest(V value) {
     if (static_cast<int8_t>(value) == value) {
-      this->Fill<int8_t>(value);
+      this->Fill(static_cast<int8_t>(value));
       return;
     }
 
     if (static_cast<int16_t>(value) == value) {
-      this->Fill<int16_t>(value);
+      this->Fill(static_cast<int16_t>(value));
       return;
     }
 
     if (static_cast<int32_t>(value) == value) {
-      this->Fill<int32_t>(value);
+      this->Fill(static_cast<int32_t>(value));
       return;
     }
 

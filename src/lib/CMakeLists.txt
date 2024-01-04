@@ -24,3 +24,8 @@ target_link_libraries(
     PRIVATE
     OneCore # OpenCommPort
 )
+target_compile_definitions(
+    favhid
+    PUBLIC
+    -DDIRECTINPUT_VERSION=0x0800
+)

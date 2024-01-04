@@ -205,16 +205,16 @@ void FAVJoyState2::WriteReport(const DIJOYSTATE2& di, uint8_t deviceIndex) {
   };
 
   // Convert POVs from centidegrees
-  for (off_t i = 0; i < 4; ++i) {
+  for (uint8_t i = 0; i < 4; ++i) {
     const auto diValue = di.rgdwPOV[i];
     const auto centered = (LOWORD(diValue) == 0xFFFF);
-    const uint8_t value = centered ? 0b1111 : diValue / 4500;
+    const uint8_t value = centered ? 0b1111 : static_cast<uint8_t>(diValue / 4500);
     report.SetPOV(i, value);
   }
 
   // Convert buttons from byte with high-bit to just a bit mask
   constexpr uint8_t BUTTON_ON_BIT = (1 << 7);
-  for (off_t i = 0; i < 128; ++i) {
+  for (uint8_t i = 0; i < 128; ++i) {
     if (!(di.rgbButtons[i] & BUTTON_ON_BIT)) {
       continue;
     }
