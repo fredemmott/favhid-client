@@ -23,6 +23,7 @@ target_link_libraries(
     favhid-headers
     PRIVATE
     OneCore # OpenCommPort
+    SetupAPI
 )
 target_compile_definitions(
     favhid

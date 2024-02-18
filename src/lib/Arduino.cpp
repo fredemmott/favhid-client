@@ -7,6 +7,8 @@
 
 #include <iostream>
 
+#include <SetupAPI.h>
+
 namespace FAVHID {
 
 constexpr std::string_view MSG_HELLO {"FAVHID" FAVHID_PROTO_VERSION};
@@ -19,9 +21,9 @@ WriteArduino(const winrt::file_handle& handle, const void* data, size_t size) {
   winrt::check_bool(FlushFileBuffers(h));
 }
 
-static winrt::file_handle OpenArduino(ULONG port) {
+static winrt::file_handle OpenArduino(std::wstring_view port) {
   winrt::file_handle f {
-    OpenCommPort(port, GENERIC_READ | GENERIC_WRITE, /* flags = */ 0)};
+    CreateFileW(std::format(L"\\\\.\\{}", port).c_str(), GENERIC_READ | GENERIC_WRITE, 0, nullptr, OPEN_EXISTING, 0, NULL) };
   COMMCONFIG config {sizeof(COMMCONFIG)};
   DWORD configSize = sizeof(config);
   winrt::check_bool(GetCommConfig(f.get(), &config, &configSize));
@@ -54,14 +56,34 @@ static winrt::file_handle OpenArduino(ULONG port) {
 }
 
 winrt::file_handle Arduino::OpenHandle(const std::optional<OpaqueID>& serial) {
-  ULONG ports[255];
+  std::vector<std::wstring> ports;
   ULONG count = 255;
-  if (GetCommPorts(ports, 255, &count) != ERROR_SUCCESS) {
-    return {};
+  auto infoSet = SetupDiGetClassDevsW(&GUID_DEVINTERFACE_COMPORT, nullptr, NULL, DIGCF_DEVICEINTERFACE | DIGCF_PRESENT | DIGCF_PROFILE);
+
+  SP_DEVINFO_DATA devInfo  { sizeof(SP_DEVINFO_DATA) };
+  DWORD deviceIndex = 0;
+  while (SetupDiEnumDeviceInfo(infoSet , deviceIndex++, &devInfo)) {
+    DWORD size = 0;
+
+    SetupDiGetDeviceRegistryPropertyW(infoSet, &devInfo, SPDRP_DEVICEDESC, 0, nullptr, 0, &size);
+    std::wstring description(size / sizeof(wchar_t), '\0');
+    SetupDiGetDeviceRegistryPropertyW(infoSet, &devInfo, SPDRP_DEVICEDESC, 0, reinterpret_cast<PBYTE>(description.data()), static_cast<DWORD>(description.size() * sizeof(wchar_t)), &size);
+    description.resize(description.size() - 1);
+    if (description != L"Arduino Micro") {
+      continue;
+    }
+
+    SetupDiGetCustomDevicePropertyW(infoSet, &devInfo, L"PortName", 0, 0, nullptr, 0, &size);
+    std::wstring portName(size / sizeof(wchar_t), '\0');
+    SetupDiGetCustomDevicePropertyW(infoSet, &devInfo, L"PortName", 0, 0, reinterpret_cast<PBYTE>(portName.data()), static_cast<DWORD>(portName.size() * sizeof(wchar_t)), &size);
+    portName.resize(portName.size() - 1);
+
+    ports.push_back(portName);
   }
-  for (ULONG i = 0; i < count; ++i) {
+
+  for (const auto port: ports) {
     try {
-      auto f = OpenArduino(ports[i]);
+      auto f = OpenArduino(port);
 
       if (!f) {
         continue;
