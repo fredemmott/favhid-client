@@ -8,6 +8,7 @@
 #include <cinttypes>
 #include <concepts>
 #include <limits>
+#include <string>
 #include <string_view>
 #include <type_traits>
 
