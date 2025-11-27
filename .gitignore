@@ -3,3 +3,4 @@
 docs/_site
 *.swp
 vcpkg_installed
+.idea/
